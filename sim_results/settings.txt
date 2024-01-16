@@ -1,0 +1,30 @@
+dim1000_random1_rho0.0_nz10_covid.zip, lasso, ident, 45, 55, 1, 1e-3
+dim1000_random1_rho0.0_nz10_covid.zip, scad, ident, 60, 80, 5, 1e-4   
+dim1000_random1_rho0.0_nz5_covid.zip, lasso, ident, 50, 70, 5, 1e-4
+dim1000_random1_rho0.0_nz5_covid.zip, scad, ident, 60, 80, 5, 1e-4
+dim1000_random1_rho0.6_nz10_covid.zip, lasso, ident, 35, 45, 1, 1e-3
+dim1000_random1_rho0.6_nz10_covid.zip, scad, ident, 60, 80, 5, 1e-4
+dim1000_random1_rho0.6_nz5_covid.zip, lasso, ident, 50, 70, 5, 1e-4 
+dim1000_random1_rho0.6_nz5_covid.zip, scad, ident, 60, 80, 5, 1e-4
+dim1000_random3_rho0.0_nz10_covdiag.zip, lasso, diag, 30, 40, 1, 1e-3 
+dim1000_random3_rho0.0_nz10_covdiag.zip, scad, diag, 40, 70, 5, 1e-4
+dim1000_random3_rho0.0_nz10_covid.zip, lasso, ident, 35, 45, 1, 1e-3
+dim1000_random3_rho0.0_nz10_covid.zip, scad, ident, 60, 80, 5, 1e-4
+dim1000_random3_rho0.0_nz10_covsym.zip, lasso, sym, 15, 35, 1, 5e-3
+dim1000_random3_rho0.0_nz10_covsym.zip, scad, sym, 35, 45, 1, 1e-3
+dim1000_random3_rho0.6_nz10_covdiag.zip, lasso, diag, 15, 25, 1, 1e-3
+dim1000_random3_rho0.6_nz10_covdiag.zip, scad, diag, 35, 55, 1, 1e-3
+dim1000_random3_rho0.6_nz10_covid.zip, lasso, ident, 25, 35, 1, 1e-3
+dim1000_random3_rho0.6_nz10_covid.zip, scad, ident, 60, 80, 5, 1e-4
+dim1000_random3_rho0.6_nz10_covsym.zip, lasso, sym, 15, 35, 1, 5e-3  
+dim1000_random3_rho0.6_nz10_covsym.zip, scad, sym, 25, 45, 1, 5e-3
+dim1000_random5_rho0.0_nz10_covid.zip, lasso, ident, 30, 45, 3, 1e-3
+dim1000_random5_rho0.0_nz10_covid.zip, scad, ident, 60, 80, 5, 1e-4
+dim1000_random5_rho0.6_nz10_covid.zip, lasso, ident, 20, 45, 3, 5e-3
+dim1000_random5_rho0.6_nz10_covid.zip, scad, ident, 50, 80, 5, 1e-3
+dim500_random1_rho0.0_nz5_covid.zip, lasso, ident, 40, 60, 5, 1e-4 
+dim500_random1_rho0.0_nz5_covid.zip, scad, ident, 50, 70, 5, 1e-4
+dim500_random1_rho0.6_nz5_covid.zip, lasso, ident, 40, 60, 5, 1e-4
+dim500_random1_rho0.6_nz5_covid.zip, scad, ident, 50, 70, 5, 1e-4
+
+NB: The design matrix was not standardized for these runs

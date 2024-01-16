@@ -1,0 +1,5 @@
+random1_covid.zip, scad, ident, 10, 100, 5, 1e-4
+random3_covid.zip, scad, ident, 10, 100, 5, 1e-4
+random3_covdiag.zip, scad, diag, 10, 100, 5, 1e-4
+random3_covsym.zip, scad, sym, 10, 100, 5, 1e-4
+random5_covid.zip, scad, ident, 10, 100, 5, 1e-4
