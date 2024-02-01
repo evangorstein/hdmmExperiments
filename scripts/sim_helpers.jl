@@ -98,6 +98,5 @@ function simulate_y(X, G, Z, grp, βun, βpen, L, σ²)
 end
 
 
-end
 
 

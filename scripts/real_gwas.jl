@@ -45,23 +45,26 @@ XG = [X G]
 Z = ones(N,1) # just random intercept 
 y_cent = (y .- mean(y))./std(y) # center and scale response to match the model fit with BGLR
 
-control = Control()
-control.trace = 3
-control.tol = 1e-2
-Random.seed!(1234)
 
-gwas_fit1 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
-    penalty="scad", λ=150, ψstr="ident", control=control)
+# Run the following if you haven't already fit the models
 
-gwas_fit2 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
-    penalty="scad", λ=190, ψstr="ident", control=control)
+# control = Control()
+# control.trace = 3
+# control.tol = 1e-2
+# Random.seed!(1234)
 
-gwas_fit3 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
-    penalty="scad", λ=200, ψstr="ident", control=control)
+# gwas_fit1 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
+#     penalty="scad", λ=150, ψstr="ident", control=control)
 
-save_object("data/real/GWAS/gwas_fit200.jld2", gwas_fit)
-save_object("data/real/GWAS/gwas_fit150.jld2", gwas_fit2)
-save_object("data/real/GWAS/gwas_fit190.jld2", gwas_fit3)
+# gwas_fit2 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
+#     penalty="scad", λ=190, ψstr="ident", control=control)
+
+# gwas_fit3 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
+#     penalty="scad", λ=200, ψstr="ident", control=control)
+
+# save_object("data/real/GWAS/gwas_fit200.jld2", gwas_fit)
+# save_object("data/real/GWAS/gwas_fit150.jld2", gwas_fit2)
+# save_object("data/real/GWAS/gwas_fit190.jld2", gwas_fit3)
 
 
 ################
@@ -97,7 +100,7 @@ snp_coef2 = $snp_coef2
 snp_coef3 = $snp_coef3
 snp_df = tibble(
     marker = rep(1:length(snp_coef1), 4),
-    lambda = rep(c("150", "190", "200", "BGLR"), each = length(snp_coef1)),
+    lambda = rep(c("lambda: 150", "lambda: 190", "lambda: 200", "BGLR"), each = length(snp_coef1)),
     coef = c(snp_coef1, snp_coef2, snp_coef3, snp_coef_bglr), 
     abs_coef = abs(coef),
     names = str_sub(rep(snp_names, 4), start = 3) #remove "rs" at start of SNP names
@@ -109,7 +112,7 @@ p = ggplot(snp_df) +
     geom_text_repel(data = chosen_markers,
                     aes(x = marker, y = abs_coef, label = names), size = 7) +
     labs(y = "coefficient maginiude") +
-    facet_wrap(~lambda, nrow = 1) +
+    facet_wrap(~lambda, nrow = 1, labeller=label_parsed) +
     theme(text = element_text(size = 35),
           axis.text.x = element_text(size = 20))
 fname = "revised_plots/real/all_snp_effects.pdf"
@@ -127,6 +130,7 @@ for (i, group) in enumerate(unique(grp))
 end
 R"""
 theme_set(theme_bw())
+theme_update(panel.grid = element_blank())
 predicts3 = $predicts3
 predicts3_fixed = $predicts3_fixed
 y_cent = $y_cent
@@ -135,7 +139,7 @@ pheno_df = tibble(
     true = rep(y_cent, 4),
     gender = rep(mice.pheno$GENDER, 4),
     predicted = c(predicts_bglr_fixed, predicts_bglr, predicts3_fixed, predicts3),
-    model = rep(c("BGLR", "Our model"), each = 2*length(y_cent)),
+    model = rep(c("BGLR", "HigmDimMM (SCAD)"), each = 2*length(y_cent)),
     re_type = factor(
         rep(c("without random effects", "with random effects"), each = length(y_cent), times = 2), 
         levels = c("without random effects", "with random effects")
@@ -145,8 +149,7 @@ pheno_df = tibble(
 p <- ggplot(pheno_df) +
     geom_point(aes(x = predicted, y = true, color = gender)) +
     geom_abline(intercept = 0, slope = 1, color = "blue") +
-    facet_wrap(model ~ re_type) +
-    theme_minimal() +
+    facet_grid(model ~ re_type) +
     theme(text = element_text(size = 35), legend.position = "bottom") +
     scale_color_brewer(palette = "Dark2")
 

@@ -23,8 +23,6 @@ scale_color_mine = function(...) {
                ...)
 }
 
-
-
 ```
 
 # Read in the data:
@@ -151,6 +149,7 @@ gene_main_fp <- bgr_nz10 %>%
   labs(y = "false positive rate", x = TeX("$\\Psi_\\theta$ structure")) +
   facet_wrap(~ predictor_cor, nrow = 2, 
              labeller = labeller(predictor_cor = corr.labs)) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   theme(legend.position = "top",
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -159,7 +158,7 @@ gene_main_fp <- bgr_nz10 %>%
 gene_main_fp
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene_main_fp.pdf",
+  "../revised_plots/gene/gene_main_fp.pdf",
   gene_main_fp,
   width = 20,
   height = 15,
@@ -169,34 +168,36 @@ ggsave(
 
 We can similarly create the plot of true positives for those simulations for which there were 3 random effects:
 ```{r, warning=FALSE}
-no_out = data.frame(q = c("3", "3","3","3"), 
-                    cov_str = factor(
-                      c( "scalar", "scalar", "diagonal", "unstructured"), 
-                      levels = c("scalar", "diagonal", "unstructured")
-                      ),
-                    penalty = c( "scad", rep("lasso", 3) ),
-                    predictor_cor = c( "No", "Yes", "No", "No"), 
-                    tp = NA,
-                    outlier = TRUE,
-                    plot = FALSE)
+
+counts <- bgr_nz10 %>%
+  group_by(penalty, cov_str, q, predictor_cor) %>%
+  summarise(
+    cnt_perfect = sum(tp == 10), .groups = "drop",
+    ) %>% 
+  filter(q == 3)
 
 gene_main_tp <- bgr_nz10 %>%
   filter(q==3) %>%
-  group_by(penalty, cov_str, q, predictor_cor) %>%
-  mutate(outlier = tp > quantile(tp, .75) + IQR(tp) * 1.5 | tp < quantile(tp, .25) - IQR(tp)) %>%
-  ungroup() %>% 
-  bind_rows(no_out) %>%
-  {
-  ggplot(data = ., aes(y = tp, x = cov_str, col = penalty)) +
-  geom_boxplot(position = position_dodge(width = 0.9), outlier.shape = NA)  +
-  geom_point(data = filter(., outlier), 
-             pch = 21, #aes(alpha = plot),
-             position = position_jitterdodge(
-               dodge.width = 0.9,
-               jitter.height = 0,
-               jitter.width = 0.3)) +
+  filter(tp < 10) %>%
+  bind_rows(
+    data.frame(
+      tp = c(NA, NA), penalty = c("scad", "lasso"), 
+      predictor_cor = c("No", "No"), cov_str = c("scalar", "unstructured")
+    )
+  ) %>%
+  ggplot(aes(y = tp, x = cov_str, col = penalty)) +
+  geom_point(
+    pch = 21,
+    position = position_jitterdodge(
+      dodge.width = 0.9,
+      jitter.height = 0,
+      jitter.width = 0.25)
+    ) +
+  geom_text(data = counts, aes(cov_str, 10, label = cnt_perfect),
+            show.legend = FALSE,
+            position = position_dodge(width = 0.9), size = 5) +
   labs(y = "# true positives (out of 10)", x = TeX("$\\Psi_\\theta$ structure")) +
-  scale_y_continuous(breaks = c(3,6,10)) +
+  scale_y_continuous(breaks = c(3,6,9,10), expand = expansion(mult = c(.05, .1))) +
   facet_wrap(~ predictor_cor, nrow = 2, labeller = labeller(predictor_cor = corr.labs)) +
   theme(
     legend.position = "top",
@@ -205,11 +206,11 @@ gene_main_tp <- bgr_nz10 %>%
     axis.title.y = element_text(size = rel(.85))
         ) +
   scale_color_brewer(type = "qual", labels = c("LASSO", "SCAD"))
-}
+
 gene_main_tp
 
 ggsave( 
-  "../revised_plots/gene_main_tp.pdf",
+  "../revised_plots/gene/gene_main_tp.pdf",
   gene_main_tp,
   width = 20,
   height = 15,
@@ -220,7 +221,7 @@ ggsave(
 Let's combine these using patchworks:
 ```{r, warning=FALSE}
 gene_main_fp + gene_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene_main_select.pdf", width = 40, height = 15, units = "cm")
+ggsave("../revised_plots/gene/gene_main_select.pdf", width = 40, height = 15, units = "cm")
 ```
 
 
@@ -268,7 +269,7 @@ gene_supp_nz5_fp <- bgr_nz5 %>%
 
 gene_supp_nz5_fp
 ggsave(
-    "../revised_plots/gene_supp_nz5_fp.pdf",
+    "../revised_plots/gene/gene_supp_nz5_fp.pdf",
     gene_supp_nz5_fp,
     width = 15,
     height = 15,
@@ -280,21 +281,28 @@ ggsave(
 
 We can similarly create the plot of true positives for those simulations for which there were 5 true fixed effects:
 ```{r}
-gene_supp_nz5_tp <- bgr_nz5 %>% 
+
+
+counts <- bgr_nz5 %>%
   group_by(penalty, p, predictor_cor) %>%
-  mutate(outlier = tp < quantile(tp, .25) - IQR(tp) * 1.5) %>%
-  ungroup() %>% 
+  summarise(
+    cnt_perfect = sum(tp == 5), .groups = "drop",
+    ) 
+gene_supp_nz5_tp <- bgr_nz5 %>% 
+  filter( tp < 5) %>%
   ggplot(aes(factor(p), tp, col = penalty)) +
-  geom_boxplot(position = position_dodge(width = 0.9), outlier.shape = NA) +
-  geom_point(data = function(x) dplyr::filter(x, outlier), pch=21, 
+  geom_point(pch=21, 
               position = position_jitterdodge(
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.3)) +
+  geom_text(data = counts, aes(factor(p), 5, label = cnt_perfect),
+            show.legend = FALSE,
+            position = position_dodge(width = 0.9), size = 5) +
   facet_wrap(~ predictor_cor, nrow = 2, 
              labeller = labeller(predictor_cor = corr.labs)) +
   labs(y = "# true positives (out of 5)", x = TeX("dimension ($p$)")) +
-  scale_y_continuous(limits = c(0,5)) +
+  scale_y_continuous(limits = c(0,5),  expand = expansion(mult = c(.05, .1))) +
   theme(
     legend.position = "top",
     axis.ticks.x = element_blank(),
@@ -305,7 +313,7 @@ gene_supp_nz5_tp <- bgr_nz5 %>%
 
 gene_supp_nz5_tp
 ggsave(
-    "../revised_plots/gene_supp_nz5_tp.pdf",
+    "../revised_plots/gene/gene_supp_nz5_tp.pdf",
     gene_supp_nz5_tp,
     width = 15,
     height = 15,
@@ -355,7 +363,7 @@ gene_supp_nz10_fp <- bgr_nz10 %>%
 gene_supp_nz10_fp
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene_supp_nz10_fp.pdf",
+  "../revised_plots/gene/gene_supp_nz10_fp.pdf",
   gene_supp_nz10_fp,
   width = 15,
   height = 15,
@@ -365,33 +373,34 @@ ggsave(
 
 We can similarly create the plot of true positives for those simulations that had 10 true fixed effects, and 1 or 5 random effects.
 ```{r, warning=FALSE}
-no_out = data.frame(q = c("1", "5", "5"), 
-                    penalty = c("scad", rep("lasso", 2)),
-                    predictor_cor = c("No", "No", "Yes"), 
-                    tp = NA,
-                    outlier = TRUE,
-                    plot = FALSE)
+
+counts <- bgr_nz10 %>%
+  group_by(penalty, q, predictor_cor) %>%
+  summarise(
+    cnt_perfect = sum(tp == 10), .groups = "drop",
+    ) %>%
+  filter(q!=3)
+no_out = data.frame(q = c("1", "1", "5"), 
+                    penalty = c("scad", "scad", "lasso"),
+                    predictor_cor = c("No", "Yes", "No"), 
+                    tp = NA)
 corr.labs = c("correlated features", "independent features")
 names(corr.labs) <- c("Yes", "No")
 
 gene_supp_nz10_tp <- bgr_nz10 %>%
   filter(q != 3) %>%
-  group_by(penalty, q, predictor_cor) %>%
-  mutate(outlier = tp < quantile(tp, .25) - IQR(tp) * 1.5,
-         plot = TRUE) %>%
-  ungroup() %>% 
+  filter(tp < 10) %>%
   bind_rows(no_out) %>%
-  {
-  ggplot(data =., aes(y = tp, x = q, 
+  ggplot(aes(y = tp, x = q, 
                       col = penalty)) +
-  geom_boxplot(position = position_dodge(width = 0.9), 
-               outlier.shape = NA) +
-  geom_point(data = filter(., outlier), 
-             pch = 21, #aes(alpha = plot),
+  geom_point(pch = 21, #aes(alpha = plot),
              position = position_jitterdodge(
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2)) +
+  geom_text(data = counts, aes(q, 10, label = cnt_perfect),
+            show.legend = FALSE,
+            position = position_dodge(width = 0.9), size = 5) +
   labs(y = "# true positives (out of 10)", x = TeX("# random effects ($q$)")) +
   facet_wrap(~ predictor_cor, nrow = 2, labeller = labeller(predictor_cor = corr.labs)) +
   theme(
@@ -400,13 +409,16 @@ gene_supp_nz10_tp <- bgr_nz10 %>%
     text = element_text(size = 18), 
     axis.title.y = element_text(size = rel(.85))
         ) +
-  scale_y_continuous(limits = c(0, 10), breaks = c(1,5,10), labels = scales::label_number(accuracy=1)) +
+  scale_y_continuous(breaks = c(1,5,9,10), 
+                     labels = scales::label_number(accuracy=1),
+                     expand = expansion(mult = c(.05, .1))
+                     ) +
   scale_color_brewer(type = "qual", labels = c("LASSO", "SCAD"))
-      }
+
 gene_supp_nz10_tp
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene_supp_nz10_tp.pdf",
+  "../revised_plots/gene/gene_supp_nz10_tp.pdf",
   gene_supp_nz10_tp,
   width = 15,
   height = 15,
@@ -415,9 +427,9 @@ ggsave(
 ```
 
 Now we can combine the above 4 plots with patchwork:
-```{r}
+```{r, warning=FALSE}
 (gene_supp_nz5_fp + gene_supp_nz5_tp) / (gene_supp_nz10_fp + gene_supp_nz10_tp) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene_supp_select.pdf", width = 40, height = 30, units = "cm")
+ggsave("../revised_plots/gene/gene_supp_select.pdf", width = 40, height = 30, units = "cm")
 ```
 
 
@@ -481,7 +493,7 @@ gene_main_beta2 <- bgr_nz10 %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_2$"), x = TeX("$\\Psi_\\theta$ structure")) +
   facet_wrap(~ predictor_cor, nrow = 2, 
              labeller = labeller(predictor_cor = corr.labs)) +
@@ -494,7 +506,7 @@ gene_main_beta2 <- bgr_nz10 %>%
 gene_main_beta2
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene_main_beta2.pdf",
+  "../revised_plots/gene/gene_main_beta2.pdf",
   gene_main_beta2,
   width = 20,
   height = 15,
@@ -536,7 +548,7 @@ gene_main_beta3 <- bgr_nz10 %>%
                jitter.height = 0,
                jitter.width = 0.2),
              show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_3$"), x = TeX("$\\Psi_\\theta$ structure")) +
   facet_wrap(~ predictor_cor, nrow = 2, 
              labeller = labeller(predictor_cor = corr.labs)) +
@@ -549,7 +561,7 @@ gene_main_beta3 <- bgr_nz10 %>%
 gene_main_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene_main_beta3.pdf",
+  "../revised_plots/gene/gene_main_beta3.pdf",
   gene_main_beta3,
   width = 20,
   height = 15,
@@ -579,7 +591,7 @@ gene_main_beta8 <- bgr_nz10 %>%
   ggplot(data =., aes(y = beta_8, x = cov_str, 
                       col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9), outlier.shape = 21) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   geom_text(data = counts, aes(cov_str, 0, label = n), 
             position = position_dodge(width = 0.9), size = 5, 
             show.legend  = F) +
@@ -596,7 +608,7 @@ gene_main_beta8 <- bgr_nz10 %>%
 
 gene_main_beta8
 ggsave(
-  "../revised_plots/gene_main_beta8.pdf",
+  "../revised_plots/gene/gene_main_beta8.pdf",
   gene_main_beta8,
   width = 20,
   height = 15,
@@ -607,7 +619,7 @@ ggsave(
 Now we can combine the above 2 plots with patchwork:
 ```{r warning=FALSE}
 gene_main_beta3 + gene_main_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene_main_est.pdf", width = 40, height = 15, units = "cm")
+ggsave("../revised_plots/gene/gene_main_est.pdf", width = 40, height = 15, units = "cm")
 ```
 
 ### Supplementary material
@@ -634,7 +646,7 @@ gene_supp_beta3 <- bgr_nz10 %>%
       geom_text(data = counts, aes(q, 0, label = n), 
             position = position_dodge(width = 0.9), size = 5, 
             show.legend  = F) +
-      geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+      geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
       labs(y = TeX("$\\beta_3$"), x = TeX("# random effects ($q$)")) +
       scale_y_continuous(limits = c(-0.5, 4.5), labels = scales::label_number(accuracy=1)) +
       facet_wrap(~ predictor_cor, nrow = 2, 
@@ -648,7 +660,7 @@ gene_supp_beta3 <- bgr_nz10 %>%
 gene_supp_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene_supp_beta3.pdf",
+  "../revised_plots/gene/gene_supp_beta3.pdf",
   gene_supp_beta3,
   width = 15,
   height = 15,
@@ -676,7 +688,7 @@ gene_supp_beta8 <- bgr_nz10 %>%
   ggplot(data =., aes(y = beta_8, x = q, 
                       col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9), outlier.shape = 21) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   geom_text(data = counts, aes(q, 0, label = n), 
             position = position_dodge(width = 0.9), size = 5, 
             show.legend  = F) +
@@ -693,7 +705,7 @@ gene_supp_beta8 <- bgr_nz10 %>%
 
 gene_supp_beta8
 ggsave(
-  "../revised_plots/gene_main_beta8.pdf",
+  "../revised_plots/gene/gene_main_beta8.pdf",
   gene_supp_beta8,
   width = 15,
   height = 15,
@@ -731,7 +743,7 @@ gene_supp_nz5_beta3 <- bgr_nz5 %>%
                jitter.height = 0,
                jitter.width = 0.2),
              show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_3$"), x = TeX("dimension ($p$)")) +
   facet_wrap(~ predictor_cor, nrow = 2,
              labeller = labeller(predictor_cor = corr.labs)) +
@@ -744,7 +756,7 @@ gene_supp_nz5_beta3 <- bgr_nz5 %>%
 
 gene_supp_nz5_beta3
 ggsave(
-    "../revised_plots/gene_supp_nz5_beta3.pdf",
+    "../revised_plots/gene/gene_supp_nz5_beta3.pdf",
     gene_supp_nz5_beta3,
     width = 15,
     height = 15,
@@ -758,7 +770,7 @@ Now we can combine the above 3 plots for our supplementary materials estimation 
 
 ```{r}
 (gene_supp_nz5_beta3) / (gene_supp_beta3 + gene_supp_beta8) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene_supp_est.pdf", width = 40, height = 30, units = "cm")
+ggsave("../revised_plots/gene/gene_supp_est.pdf", width = 40, height = 30, units = "cm")
 ```
 
 ## Variance components
@@ -774,7 +786,7 @@ var_ge_scalar <- bgr_nz10 %>%
   filter(cov_str == "scalar") %>%
   ggplot(aes(y = psi_1, x=q)) +
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21)  +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = "Estimated parameter", x = TeX("# random effects ($q$)")) +
   facet_wrap(~ predictor_cor, nrow = 2,
              labeller = labeller(predictor_cor = corr.labs)) +
@@ -790,7 +802,7 @@ var_ge_scalar
 
 
 ggsave(
-  "../revised_plots/var_ge_scalar.pdf",
+  "../revised_plots/gene/var_ge_scalar.pdf",
   var_ge_scalar,
   width = 20,
   height = 15,
@@ -811,7 +823,7 @@ var_ge_diag <- bgr_nz10 %>%
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
   geom_segment(data = df_true, aes(x = parameter-.4, xend = parameter+.4,
                                    y = y_value, yend = y_value,
-                                   linetype = "True Parameter")) +
+                                   linetype = "True Parameter"), show.legend = F) +
   facet_wrap(~ predictor_cor, nrow = 2,
              labeller = labeller(predictor_cor = corr.labs)) +
   labs(y = "Estimated parameter", x = TeX("Entry in $\\Psi")) +
@@ -825,7 +837,7 @@ var_ge_diag <- bgr_nz10 %>%
 var_ge_diag
 
 ggsave(
-  "../revised_plots/var_ge_diag.pdf",
+  "../revised_plots/gene/var_ge_diag.pdf",
   var_ge_diag,
   width = 20,
   height = 15,
@@ -847,7 +859,7 @@ var_ge_sym <- bgr_nz10 %>%
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
   geom_segment(data = df_true, aes(x = parameter-.4, xend = parameter+.4,
                                    y = y_value, yend = y_value,
-                                   linetype = "True Parameter")) +
+                                   linetype = "True Parameter"), show.legend = FALSE) +
   facet_wrap(~ predictor_cor, nrow = 2,
              labeller = labeller(predictor_cor = corr.labs)) +
   scale_x_discrete(labels = c( TeX("$\\Psi_{1,1}"),
@@ -867,7 +879,7 @@ var_ge_sym <- bgr_nz10 %>%
   scale_color_brewer(type = "qual", labels = c("LASSO", "SCAD"))
 var_ge_sym
 ggsave(
-  "../revised_plots/var_ge_sym.pdf",
+  "../revised_plots/gene/var_ge_sym.pdf",
   var_ge_sym,
   width = 20,
   height = 15,
@@ -879,7 +891,7 @@ Combine into final plot
 
 ```{r}
 (var_ge_scalar + var_ge_diag) / var_ge_sym + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/var_ge_comp.pdf", width = 40, height = 30, units = "cm")
+ggsave("../revised_plots/gene/var_ge_comp.pdf", width = 40, height = 30, units = "cm")
 ```
 
 # GWAS
@@ -926,6 +938,7 @@ gwas_main_fp <- best_gwas_results  %>%
   ggplot(aes(y = fp/990, x = cov_str, col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9),
                width = .3, outlier.shape = 21, show.legend = F) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   labs(y = "false positive rate", x = TeX("$\\Psi_\\theta$ structure")) + 
   theme(legend.position = "top",
         axis.ticks.x = element_blank(),
@@ -935,7 +948,7 @@ gwas_main_fp <- best_gwas_results  %>%
 gwas_main_fp
 
 ggsave(
-  "../revised_plots/gwas_main_fp.pdf",
+  "../revised_plots/gwas/gwas_main_fp.pdf",
   gwas_main_fp,
   width = 20,
   height = 8,
@@ -979,7 +992,7 @@ gwas_main_tp <- best_gwas_results  %>%
 gwas_main_tp
 
 ggsave(
-  "../revised_plots/gwas_main_tp.pdf",
+  "../revised_plots/gwas/gwas_main_tp.pdf",
   gwas_main_fp,
   width = 20,
   height = 8,
@@ -993,7 +1006,7 @@ Now let's add them together
 
 ```{r}
 gwas_main_fp + gwas_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas_main_select.pdf", width = 40, height = 10, units = "cm")
+ggsave("../revised_plots/gwas/gwas_main_select.pdf", width = 40, height = 10, units = "cm")
 ```
 
 
@@ -1013,7 +1026,8 @@ gwas_supp_fp <- best_gwas_results  %>%
   ggplot(aes(y = fp/990, x = q, col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9), show.legend = F,
                width = .3, outlier.shape = 21) +
-  labs(y = "false positive rate", x = TeX("# random effects ($q$)")) + 
+  labs(y = "false positive rate", x = TeX("# random effects ($q$)")) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   theme(legend.position = "top",
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -1022,7 +1036,7 @@ gwas_supp_fp <- best_gwas_results  %>%
 gwas_supp_fp
 
 ggsave(
-  "../revised_plots/gwas_supp_fp.pdf",
+  "../revised_plots/gwas/gwas_supp_fp.pdf",
   gwas_main_fp,
   width = 20,
   height = 8,
@@ -1064,7 +1078,7 @@ gwas_supp_tp <- best_gwas_results  %>%
 gwas_supp_tp
 
 ggsave(
-  "../revised_plots/gwas_supp_tp.pdf",
+  "../revised_plots/gwas/gwas_supp_tp.pdf",
   gwas_supp_tp,
   width = 20,
   height = 8,
@@ -1076,7 +1090,7 @@ Now combine:
 
 ```{r}
 gwas_supp_fp + gwas_supp_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas_supp_select.pdf", width = 40, height = 10, units = "cm")
+ggsave("../revised_plots/gwas/gwas_supp_select.pdf", width = 40, height = 10, units = "cm")
 ```
 
 
@@ -1105,7 +1119,7 @@ gwas_main_beta3 <- best_gwas_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_3$"), x = TeX("$\\Psi_\\theta$ structure")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
@@ -1116,7 +1130,7 @@ gwas_main_beta3 <- best_gwas_results %>%
 gwas_main_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas_main_beta3.pdf",
+  "../revised_plots/gwas/gwas_main_beta3.pdf",
   gwas_main_beta3,
   width = 20,
   height = 8,
@@ -1142,7 +1156,7 @@ gwas_main_beta8 <- best_gwas_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_8$"), x = TeX("$\\Psi_\\theta$ structure")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
@@ -1153,7 +1167,7 @@ gwas_main_beta8 <- best_gwas_results %>%
 gwas_main_beta8
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas_main_beta8.pdf",
+  "../revised_plots/gwas/gwas_main_beta8.pdf",
   gwas_main_beta8,
   width = 20,
   height = 8,
@@ -1166,7 +1180,7 @@ Combine
 
 ```{r}
 gwas_main_beta3 + gwas_main_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas_main_est.pdf", width = 40, height = 10, units = "cm")
+ggsave("../revised_plots/gwas/gwas_main_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
@@ -1192,7 +1206,7 @@ gwas_supp_beta3 <- best_gwas_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_3$"), x = TeX("# random effects ($q$)")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
@@ -1203,7 +1217,7 @@ gwas_supp_beta3 <- best_gwas_results %>%
 gwas_supp_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas_supp_beta3.pdf",
+  "../revised_plots/gwas/gwas_supp_beta3.pdf",
   gwas_supp_beta3,
   width = 20,
   height = 8,
@@ -1230,7 +1244,7 @@ gwas_supp_beta8 <- best_gwas_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = TeX("$\\beta_8$"), x = TeX("# random effects ($q$)")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
@@ -1241,7 +1255,7 @@ gwas_supp_beta8 <- best_gwas_results %>%
 gwas_supp_beta8
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas_supp_beta8.pdf",
+  "../revised_plots/gwas/gwas_supp_beta8.pdf",
   gwas_supp_beta8,
   width = 20,
   height = 8,
@@ -1252,7 +1266,7 @@ Combine
 
 ```{r}
 gwas_supp_beta3 + gwas_supp_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
+ggsave("../revised_plots/gwas/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
@@ -1267,7 +1281,7 @@ var_gwas_scalar <- best_gwas_results %>%
   filter(cov_str == "scalar") %>%
   ggplot(aes(y = psi_1, x=q)) +
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21)  +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   labs(y = "Estimated parameter", x = TeX("# random effects ($q$)")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
@@ -1278,7 +1292,7 @@ var_gwas_scalar <- best_gwas_results %>%
 var_gwas_scalar
 
 ggsave(
-  "../revised_plots/var_gwas_scalar.pdf",
+  "../revised_plots/gwas/var_gwas_scalar.pdf",
   var_gwas_scalar,
   width = 20,
   height = 15,
@@ -1321,7 +1335,8 @@ var_gwas_diag <- best_gwas_results %>%
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
   geom_segment(data = df_true, aes(x = parameter-.4, xend = parameter+.4,
                                    y = y_value, yend = y_value,
-                                   linetype = "True Parameter")) +
+                                   linetype = "True Parameter"),
+               show.legend = FALSE) +
   labs(y = "Estimated parameter", x = TeX("Diagonal $\\Psi")) +
   scale_x_discrete(labels = c( TeX("$\\Psi_{1,1}"), TeX("$\\Psi_{2,2}"), TeX("$\\Psi_{3,3}"))) +
 
@@ -1334,7 +1349,7 @@ var_gwas_diag <- best_gwas_results %>%
 var_gwas_diag
 
 ggsave(
-  "../revised_plots/var_gwas_diag.pdf",
+  "../revised_plots/gwas/var_gwas_diag.pdf",
   var_gwas_diag,
   width = 20,
   height = 15,
@@ -1384,7 +1399,8 @@ var_gwas_sym <- best_gwas_results %>%
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
   geom_segment(data = df_true, aes(x = parameter-.4, xend = parameter+.4,
                                    y = y_value, yend = y_value,
-                                   linetype = "True Parameter")) +
+                                   linetype = "True Parameter"),
+               show.legend = FALSE) +
   scale_x_discrete(labels = c( TeX("$\\Psi_{1,1}"),
                                TeX("$\\Psi_{1,2}"),
                                TeX("$\\Psi_{1,3}"),
@@ -1403,20 +1419,18 @@ var_gwas_sym <- best_gwas_results %>%
 var_gwas_sym
 
 ggsave(
-  "../revised_plots/var_gwas_sym.pdf",
+  "../revised_plots/gwas/var_gwas_sym.pdf",
   var_gwas_sym,
   width = 20,
   height = 15,
   units = "cm"
 )
 ```
-
-
 Combine into final plot
 
 ```{r}
 (var_gwas_scalar + var_gwas_diag) / var_gwas_sym + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/var_gwas_comp.pdf", width = 40, height = 30, units = "cm")
+ggsave("../revised_plots/gwas/var_gwas_comp.pdf", width = 40, height = 30, units = "cm")
 ```
 
 # Microbiome
@@ -1469,15 +1483,16 @@ otu_main_fp <- best_otu_results  %>%
              position = position_jitter(height = 0, width = 0.1)) +
   facet_wrap(~ otu_cor, nrow = 2) +
   labs(y = "false positive rate", x = TeX("$\\Psi_\\theta$ structure")) + 
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) +
   scale_color_manual(values = "#BEAED4", labels = "SCAD", breaks = "scad")
   }
 
 otu_main_fp
 ggsave(
-  "../revised_plots/otu_main_fp.pdf",
+  "../revised_plots/otu/otu_main_fp.pdf",
   otu_main_fp,
   width = 20,
   height = 10,
@@ -1506,7 +1521,7 @@ otu_main_tp <- best_otu_results  %>%
   labs(y = "# true positives (out of 11)", x = TeX("$\\Psi_\\theta$ structure")) + 
   scale_y_continuous(labels = scales::label_number(accuracy = 1), 
                      limits = c(0,12), breaks = c(4,11)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_manual(values = "#BEAED4", labels = "SCAD", breaks = "scad")
@@ -1514,7 +1529,7 @@ otu_main_tp <- best_otu_results  %>%
 otu_main_tp
 
 ggsave(
-  "../revised_plots/otu_main_tp.pdf",
+  "../revised_plots/otu/otu_main_tp.pdf",
   gwas_main_fp,
   width = 20,
   height = 10,
@@ -1526,8 +1541,8 @@ ggsave(
 Combine false and true positives
 
 ```{r}
-otu_main_fp + otu_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otus_main_select.pdf", width = 40, height = 10, units = "cm")
+otu_main_fp + otu_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') 
+ggsave("../revised_plots/otu/otus_main_select.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
@@ -1544,22 +1559,23 @@ otu_supp_fp_bsf <- best_otu_results  %>%
   group_by(q, otu_cor) %>%
   mutate(outlier = fp > quantile(fp, .75) + IQR(fp) * 1.5) %>%
   ungroup() %>% {
-  ggplot(data = ., aes(y = fp/117, x = q, col = penalty)) +
-  geom_boxplot(width = .3, outlier.shape = NA, show.legend = F) +
-   geom_point(data = filter(., outlier), 
-             pch = 21, #aes(alpha = plot),
-             position = position_jitter(height = 0, width = 0.1)) +
-  facet_wrap(~ otu_cor, nrow = 2) +
-  labs(y = "false positive rate", x = TeX("# random effects ($q$)")) + 
-  theme(legend.position = "top",
-        axis.ticks.x = element_blank(),
-        text = element_text(size = 18)) +
-  scale_color_manual(values = "#BEAED4", labels = "SCAD", breaks = "scad")
+    ggplot(data = ., aes(y = fp/117, x = q, col = penalty)) +
+      geom_boxplot(width = .3, outlier.shape = NA, show.legend = F) +
+      geom_point(data = filter(., outlier), 
+                 pch = 21, #aes(alpha = plot),
+                 position = position_jitter(height = 0, width = 0.1)) +
+      facet_wrap(~ otu_cor, nrow = 2) +
+      labs(y = "false positive rate", x = TeX("# random effects ($q$)")) + 
+      theme(legend.position = "none",
+            axis.ticks.x = element_blank(),
+            text = element_text(size = 18)) +
+      scale_y_continuous(expand = expansion(mult = c(0, .05))) +
+      scale_color_manual(values = "#BEAED4", labels = "SCAD", breaks = "scad")
   }
 
 otu_supp_fp_bsf
 ggsave(
-  "../revised_plots/otu_supp_fp_bsf.pdf",
+  "../revised_plots/otu/otu_supp_fp_bsf.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1585,17 +1601,17 @@ otu_supp_fp_others <- best_otu_results  %>%
   facet_grid(otu_cor ~ q, space = "free", scales = "free_x",
              labeller = labeller(q = q.labs)) +  
   labs(y = "false positive rate", x = TeX("$\\Psi_\\theta$ structure")) + 
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         axis.ticks.x = element_blank(),
         strip.text.y = element_text(size = 8),
         text = element_text(size = 18)) +
   scale_color_manual(values = "#BEAED4", labels = "SCAD", breaks = "scad") +
-  scale_y_continuous(n.breaks = 4)
+  scale_y_continuous(n.breaks = 4, expand = expansion(mult = c(0, .05)))
   }
 
 otu_supp_fp_others
 ggsave(
-  "../revised_plots/otu_supp_fp_others.pdf",
+  "../revised_plots/otu/otu_supp_fp_others.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1627,7 +1643,7 @@ otu_supp_tp_bsf <- best_otu_results  %>%
   labs(y = "# true positives (out of 11)", x = TeX("# random effects ($q$)")) + 
   scale_y_continuous(labels = scales::label_number(accuracy = 1), 
                      limits = c(0,12), breaks = c(6,11)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_manual(values = "#BEAED4", labels = "SCAD", breaks = "scad")
@@ -1635,7 +1651,7 @@ otu_supp_tp_bsf <- best_otu_results  %>%
 
 otu_supp_tp_bsf
 ggsave(
-  "../revised_plots/otu_supp_tp_bsf.pdf",
+  "../revised_plots/otu/otu_supp_tp_bsf.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1665,7 +1681,7 @@ otu_supp_tp_others <- best_otu_results  %>%
   labs(y = "# true positives (out of 11)", x = TeX("$\\Psi_\\theta$ structure")) + 
   scale_y_continuous(labels = scales::label_number(accuracy = 1), 
                      limits = c(0,12), breaks = c(4,6,11)) + 
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         axis.text.y = element_text(size = 12),
         axis.ticks.x = element_blank(),
         strip.text.y = element_text(size = 8),
@@ -1674,7 +1690,7 @@ otu_supp_tp_others <- best_otu_results  %>%
 
 otu_supp_tp_others
 ggsave(
-  "../revised_plots/otu_supp_tp_others.pdf",
+  "../revised_plots/otu/otu_supp_tp_others.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1685,13 +1701,13 @@ Combine into single plot
 
 ```{r}
 otu_supp_fp_bsf + otu_supp_tp_bsf + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otu_supp_select_bsf.pdf", width = 40, height = 15, units = "cm")
+ggsave("../revised_plots/otu/otu_supp_select_bsf.pdf", width = 40, height = 15, units = "cm")
 ```
 
 
 ```{r}
-otu_supp_fp_others + otu_supp_tp_others + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otu_supp_select_others.pdf", width = 40, height = 15, units = "cm")
+otu_supp_fp_others + otu_supp_tp_others + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A')
+ggsave("../revised_plots/otu/otu_supp_select_others.pdf", width = 40, height = 15, units = "cm")
 ```
 
 ## Estimation
@@ -1719,11 +1735,11 @@ otu_main_betagrp <- best_otu_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   facet_wrap(~ otu_cor, nrow = 2) +
   labs(y = TeX("$\\beta_{group}$"), x = TeX("$\\Psi_\\theta$ structure")) +
   #coord_cartesian(ylim = c(-2, 0)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -1732,7 +1748,7 @@ otu_main_betagrp <- best_otu_results %>%
 otu_main_betagrp
 
 ggsave(
-  "../revised_plots/otu_main_betagrp.pdf",
+  "../revised_plots/otu/otu_main_betagrp.pdf",
   otu_main_betagrp,
   width = 20,
   height = 10,
@@ -1759,11 +1775,11 @@ otu_main_beta8 <- best_otu_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   facet_wrap(~ otu_cor, nrow = 2) +
   labs(y = TeX("$\\beta_8$"), x = TeX("$\\Psi_\\theta$ structure")) +
   #coord_cartesian(ylim = c(-2, 0)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -1772,7 +1788,7 @@ otu_main_beta8 <- best_otu_results %>%
 otu_main_beta8
 
 ggsave(
-  "../revised_plots/otu_main_betagrp.pdf",
+  "../revised_plots/otu/otu_main_betagrp.pdf",
   otu_main_beta8,
   width = 20,
   height = 10,
@@ -1780,8 +1796,8 @@ ggsave(
 )
 ```
 ```{r}
-otu_main_betagrp + otu_main_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otu_main_est.pdf", width = 40, height = 15, units = "cm")
+otu_main_betagrp + otu_main_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') 
+ggsave("../revised_plots/otu/otu_main_est.pdf", width = 40, height = 15, units = "cm")
 ```
 
 ### Supplementary material
@@ -1808,11 +1824,11 @@ otu_supp_betagrp_bsf <- best_otu_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   facet_wrap(~ otu_cor, nrow = 2) +
   labs(y = TeX("$\\beta_{group}$"), x = TeX("# random effects ($q$)")) +
   #coord_cartesian(ylim = c(-2, 0)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -1821,7 +1837,7 @@ otu_supp_betagrp_bsf <- best_otu_results %>%
 otu_supp_betagrp_bsf
 
 ggsave(
-  "../revised_plots/otu_supp_betagrp_bsf.pdf",
+  "../revised_plots/otu/otu_supp_betagrp_bsf.pdf",
   otu_supp_betagrp_bsf,
   width = 20,
   height = 10,
@@ -1849,12 +1865,12 @@ otu_supp_betagrp_other <- best_otu_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   facet_grid(otu_cor ~ q, space = "free", scales = "free_x",
              labeller = labeller(q = q.labs)) +  
   labs(y = TeX("$\\beta_{group}$"), x = TeX("$\\Psi_\\theta$ structure")) +
   #coord_cartesian(ylim = c(-2, 0)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         strip.text.y = element_text(size = 8),
@@ -1864,7 +1880,7 @@ otu_supp_betagrp_other <- best_otu_results %>%
 otu_supp_betagrp_other
 
 ggsave(
-  "../revised_plots/otu_supp_betagrp_other.pdf",
+  "../revised_plots/otu/otu_supp_betagrp_other.pdf",
   otu_supp_betagrp_other,
   width = 20,
   height = 10,
@@ -1894,11 +1910,11 @@ otu_supp_beta8_bsf <- best_otu_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   facet_wrap(~ otu_cor, nrow = 2) +
   labs(y = TeX("$\\beta_8$"), x = TeX("# random effects ($q$)")) +
   #coord_cartesian(ylim = c(-2, 0)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -1907,7 +1923,7 @@ otu_supp_beta8_bsf <- best_otu_results %>%
 otu_supp_beta8_bsf
 
 ggsave(
-  "../revised_plots/otu_supp_beta8_bsf.pdf",
+  "../revised_plots/otu/otu_supp_beta8_bsf.pdf",
   otu_supp_beta8_bsf,
   width = 20,
   height = 10,
@@ -1936,12 +1952,12 @@ otu_supp_beta8_other <- best_otu_results %>%
                dodge.width = 0.9,
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
-  geom_hline(data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
+  geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
   facet_grid(otu_cor ~ q, space = "free", scales = "free_x",
              labeller = labeller(q = q.labs)) +  
   labs(y = TeX("$\\beta_8$"), x = TeX("$\\Psi_\\theta$ structure")) +
   #coord_cartesian(ylim = c(-2, 0)) +
-  theme(legend.position = "top",
+  theme(legend.position = "none",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         strip.text.y = element_text(size = 8),
@@ -1951,7 +1967,7 @@ otu_supp_beta8_other <- best_otu_results %>%
 otu_supp_beta8_other
 
 ggsave(
-  "../revised_plots/otu_supp_beta8_other.pdf",
+  "../revised_plots/otu/otu_supp_beta8_other.pdf",
   otu_supp_beta8_other,
   width = 20,
   height = 10,
@@ -1964,14 +1980,14 @@ ggsave(
 Combine into single plot
 
 ```{r}
-otu_supp_betagrp_bsf + otu_supp_beta8_bsf + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otu_supp_est_bsf.pdf", width = 40, height = 15, units = "cm")
+otu_supp_betagrp_bsf + otu_supp_beta8_bsf + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A')
+ggsave("../revised_plots/otu/otu_supp_est_bsf.pdf", width = 40, height = 15, units = "cm")
 ```
 
 
 ```{r}
-otu_supp_betagrp_other + otu_supp_beta8_other + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otu_supp_est_others.pdf", width = 40, height = 15, units = "cm")
+otu_supp_betagrp_other + otu_supp_beta8_other + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') 
+ggsave("../revised_plots/otu/otu_supp_est_others.pdf", width = 40, height = 15, units = "cm")
 ```
 
 
