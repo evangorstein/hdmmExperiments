@@ -121,13 +121,14 @@ ggsave(fname,p,width = 40, height = 30, units = "cm")
 
 
 #True versus predicted plots
-R"predicts_bglr_fixed = fm$mu + X[,-1]%*%fm$ETA$FIXED$b + G%*%snp_coef_bglr"
-R"predicts_bglr = fm$yHat"
-predicts3_fixed = X*gwas_fit3.fixef[1:10] + G*gwas_fit3.fixef[11:end]
-predicts3 = similar(y)
+R"predicts_bglr_fixed = fm$mu + X[,-1]%*%fm$ETA$FIXED$b + G%*%snp_coef_bglr" # includes only fixed effects
+R"predicts_bglr = fm$yHat" # includes both fixed and random effects
+predicts3_fixed = X*gwas_fit3.fixef[1:10] + G*gwas_fit3.fixef[11:end] # includes only fixed effects
+predicts3 = similar(y) # includes both fixed and random effects
 for (i, group) in enumerate(unique(grp))
     predicts3[grp.==group] = gwas_fit3.fitted[i]
 end
+
 R"""
 theme_set(theme_bw())
 theme_update(panel.grid = element_blank())
@@ -156,6 +157,24 @@ p <- ggplot(pheno_df) +
 ggsave("revised_plots/real/gwas_true_v_predicted.pdf", p, width = 30, height = 30, units = "cm")
 """
 
+# What about just genetic effects (excluding other fixed effects)?
+R"""
+gHat <- G%*%snp_coef_bglr
+plot(fm$y~gHat,ylab="Phenotype",
+    xlab="Linear predictor from genomic features", cex=0.5,
+    main="Phenotype versus linear predictor from genomic features in BGLR model",
+    xlim=range(gHat),ylim=range(fm$y))
+"""
+R"""
+gHatHDMM <- G%*%$(gwas_fit1.fixef[11:end])
+plot(fm$y~gHatHDMM,ylab="Phenotype",
+    xlab="Linear predictor from genomic features", cex=0.5,
+    main="Phenotype versus linear predictor from genomic features in HDMM model",
+    xlim=range(gHatHDMM),ylim=range(fm$y))
+"""
+
+
+
 
 #Fit and variance statistics
 #predicts_bglr_fixed = @rget predicts_bglr_fixed
@@ -182,3 +201,17 @@ intersect(their_names, my_names)
 # all seven of our non-zero SNPs are in the top 20 SNPs in the BGLR model
 
 
+
+## Now compare with the quasi-likelihood paper
+ql_names = ["rs1347639", 
+            "rs13476390", 
+            "rs13482464", 
+            "rs13478535", 
+            "rs4152477", 
+            "rs3023058", 
+            "rs6251709", 
+            "rs13480072", 
+            "rs6185805", 
+            "rs13481413", 
+            "rs134819616", 
+            "rs41395354"]
