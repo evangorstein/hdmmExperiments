@@ -105,13 +105,13 @@ snp_df = tibble(
     abs_coef = abs(coef),
     names = str_sub(rep(snp_names, 4), start = 3) #remove "rs" at start of SNP names
     )
-chosen_markers = filter(snp_df, lambda == "200", coef!=0)
+chosen_markers = filter(snp_df, "lambda: 200", coef!=0)
 p = ggplot(snp_df) +
     geom_segment(aes(x = marker, xend = marker, y = 0, yend = abs_coef), color = "gray") +
     geom_point(aes(x = marker, y = abs_coef), color = "blue") +
     geom_text_repel(data = chosen_markers,
                     aes(x = marker, y = abs_coef, label = names), size = 7) +
-    labs(y = "coefficient maginiude") +
+    labs(y = "coefficient maginitude") +
     facet_wrap(~lambda, nrow = 1, labeller=label_parsed) +
     theme(text = element_text(size = 35),
           axis.text.x = element_text(size = 20))
@@ -200,11 +200,8 @@ intersect(their_names, my_names)
 """
 # all seven of our non-zero SNPs are in the top 20 SNPs in the BGLR model
 
-
-
 ## Now compare with the quasi-likelihood paper
-ql_names = ["rs1347639", 
-            "rs13476390", 
+ql_names = [ "rs13476390", 
             "rs13482464", 
             "rs13478535", 
             "rs4152477", 
@@ -213,5 +210,11 @@ ql_names = ["rs1347639",
             "rs13480072", 
             "rs6185805", 
             "rs13481413", 
-            "rs134819616", 
-            "rs41395354"]
+            "rs13481961", 
+            "rs4139535", 
+            "gnf18.028.738",
+            "gnfX.070.167"]
+
+my_names = snp_names[idx_snp_nz1]
+my_names = map(x -> x[1:end-2], my_names)
+intersect(ql_names, my_names)
