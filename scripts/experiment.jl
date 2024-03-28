@@ -13,9 +13,9 @@ res_matrix = Array{Any}(undef, 1, length(λs) + 1)
 # file_names = readdir(data_dir)
 # filter!(x -> occursin("rs_data_LinShi", x), file_names)
 # println(length(file_names))
-file = filter(f -> f.name == "dim1000_random1_rho0.0_nz10_covid/data15.csv", r.files)   
+  
 
-for (i, f) in enumerate(file) #First file is just the folder
+for (i, f) in enumerate(file[2:end]) #First file is just the folder
 #for (i, f) in enumerate(file_names)
 
     println("Filename: $(f.name)")
