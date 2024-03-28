@@ -169,7 +169,7 @@ We can similarly create the plot of true positives for those simulations for whi
 bgr_nz10 %>%
   filter(q==3) %>%
   select(penalty, cov_str, predictor_cor, tp) %>%
-  write_csv("../output/gene/gene_main_tp.csv")
+  write_csv("../true_positive_tables/gene/gene_main_tp.csv")
 
 
 ```
@@ -994,7 +994,7 @@ best_gwas_results %>%
   ungroup() %>%
   filter(q==3) %>%
   select(penalty, cov_str, tp) %>%
-  write_csv("../output/gwas/gwas_main_tp.csv")
+  write_csv("../true_positive_tables/gwas/gwas_main_tp.csv")
 
 
 ```
@@ -1548,7 +1548,7 @@ best_otu_results %>%
   ungroup() %>%
   filter(q==3) %>%
   select(q, otu_cor, cov_str, tp) %>%
-  write_csv("../output/otu/otu_main_tp.csv")
+  write_csv("../true_positive_tables/otu/otu_main_tp.csv")
 ```
 
 
