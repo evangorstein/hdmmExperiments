@@ -105,13 +105,13 @@ snp_df = tibble(
     abs_coef = abs(coef),
     names = str_sub(rep(snp_names, 4), start = 3) #remove "rs" at start of SNP names
     )
-chosen_markers = filter(snp_df, "lambda: 200", coef!=0)
+chosen_markers = filter(snp_df, lambda == "lambda: 200", coef!=0)
 p = ggplot(snp_df) +
     geom_segment(aes(x = marker, xend = marker, y = 0, yend = abs_coef), color = "gray") +
     geom_point(aes(x = marker, y = abs_coef), color = "blue") +
     geom_text_repel(data = chosen_markers,
                     aes(x = marker, y = abs_coef, label = names), size = 7) +
-    labs(y = "coefficient maginitude") +
+    labs(y = "coefficient magnitude") +
     facet_wrap(~lambda, nrow = 1, labeller=label_parsed) +
     theme(text = element_text(size = 35),
           axis.text.x = element_text(size = 20))
