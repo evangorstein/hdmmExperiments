@@ -1,4 +1,5 @@
 using HighDimMixedModels
+using RCall
 using CSV
 using DataFrames
 using Lasso
@@ -10,7 +11,7 @@ using JLD2
 # note that response y is square root of age and the design matrix is library size normalized
 data_dir = "data/real/OTU"
 d = CSV.read("$data_dir/tss_normalized_data.csv", DataFrame)
-
+otu_taxonomies = CSV.read("$data_dir/taxonomies.csv", DataFrame)
 N = size(d)[1]
 grp = d.country
 # USA: 1, Malawi: 2, Venezuela: 3
@@ -37,17 +38,27 @@ otu_fit = load_object("data/real/OTU/otu_fit.jld2")
 
 
 # get indices of non-zero coefficients besides intercept in the initial estimates
-idx_nz_init = findall(!iszero, otu_fit.init_coef.βstart)[2:end]
-# get names of non-zero coefficients and their values
-coef_nz = [names(d)[idx_nz_init] otu_fit.init_coef.βstart[idx_nz_init]] #this works because the first column of d is group
+init_effects = otu_fit.init_coef.βstart[2:end]
+idx_nz_init = findall(!iszero, init_effects)
+# get taxonomies of non-zero coefficients and their values
+coef_nz_init = [otu_taxonomies[idx_nz_init,end-3:end] init_effects[idx_nz_init]] 
 # get max and min absolute value of non-zero coefficients
-max_coef = maximum(abs.(coef_nz[:,2]))
-min_coef = minimum(abs.(coef_nz[:,2]))
+max_coef = maximum(abs.(coef_nz_init[:,end]))
+min_coef = minimum(abs.(coef_nz_init[:,end]))
 
 # get indices of non-zero coefficients besides intercept in the final estimates
-idx_nz = findall(!iszero, otu_fit.fixef)[2:end]
+effects = otu_fit.fixef[2:end]
+idx_nz = findall(!iszero, effects)
 # get names of non-zero coefficients and their values
-coef_nz = [names(d)[idx_nz] otu_fit.fixef[idx_nz]] #this works because the first column is group 
+coef_nz = [idx_nz otu_taxonomies[idx_nz, (end-2):end] ]
+coef_nz.effect_estimates = effects[idx_nz]
+rename!(coef_nz, "x1" => "OTU_index")
+R"
+$coef_nz |>
+    tt(digits = 2) |>
+    style_tt(align = \"c\") |>
+    print(\"latex\")
+"
 
 #Calculate variance explained
 raw_var = var(y)

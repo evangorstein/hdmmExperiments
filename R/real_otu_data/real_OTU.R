@@ -74,6 +74,12 @@ data = merged_data2
 
 write.csv(data, "data/real/OTU/tss_normalized_data.csv", row.names = F)
 
+# get taxonomies of OTUs included in this final data set
+OTU_ids = colnames(data)
+OTU_ids = OTU_ids[2:(length(OTU_ids)-1)]
+OTU_taxonomies = data.obj$otu.name
+final_OTU_taxonomies = OTU_taxonomies[str_remove(OTU_ids, "X"),]
+write.csv(final_OTU_taxonomies, "data/real/OTU/taxonomies.csv", row.names = T)
 
 ############################################Lmmscad
 library(stringr)
