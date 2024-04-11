@@ -110,13 +110,13 @@ p = ggplot(snp_df) +
     geom_segment(aes(x = marker, xend = marker, y = 0, yend = abs_coef), color = "gray") +
     geom_point(aes(x = marker, y = abs_coef), color = "blue") +
     geom_text_repel(data = chosen_markers,
-                    aes(x = marker, y = abs_coef, label = names), size = 7) +
+                    aes(x = marker, y = abs_coef, label = names), size = 8) +
     labs(y = "coefficient magnitude") +
     facet_wrap(~lambda, nrow = 1, labeller=label_parsed) +
     theme(text = element_text(size = 35),
           axis.text.x = element_text(size = 20))
 fname = "revised_plots/real/all_snp_effects.pdf"
-ggsave(fname,p,width = 40, height = 30, units = "cm")
+ggsave(fname,p,width = 50, height = 30, units = "cm")
 """
 
 

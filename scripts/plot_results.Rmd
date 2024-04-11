@@ -490,7 +490,6 @@ gene_main_beta2 <- bgr_nz10 %>%
   facet_wrap(~ predictor_cor, nrow = 2, 
              labeller = labeller(predictor_cor = corr.labs)) +
   theme(legend.position = "top",
-        legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_mine()
@@ -527,7 +526,6 @@ gene_main_beta3 <- bgr_nz10 %>%
   facet_wrap(~ predictor_cor, nrow = 2, 
              labeller = labeller(predictor_cor = corr.labs), scales = "free") +
   theme(legend.position = "top",
-        legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_mine()
@@ -578,7 +576,6 @@ gene_main_beta4 <- bgr_nz10 %>%
              labeller = labeller(predictor_cor = corr.labs)) +
   scale_y_continuous(limits = c(-0.5, 3.5), labels = scales::label_number(accuracy=1)) +
   theme(legend.position = "top",
-        legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_mine()
