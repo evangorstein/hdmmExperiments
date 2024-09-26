@@ -31,6 +31,8 @@ scale_color_otu = function(...) {
                ...)
 }
 
+corr.labs = c("yes correlation", "no correlation")
+names(corr.labs) <- c("Yes", "No")
 
 ```
 
@@ -125,9 +127,6 @@ bgr_nz10 <- best_gene_results %>%
 Now we can create the plot of false positives for those simulations for which there were 3 random effects:
 
 ```{r}
-corr.labs = c("yes correlation", "no correlation")
-names(corr.labs) <- c("Yes", "No")
-
 gene_main_fp <- bgr_nz10 %>%
   filter(q == 3) %>%
   mutate(fpr = fp/990) %>%
@@ -254,8 +253,6 @@ bgr_nz5 <- best_gene_results %>%
 Now we can create the plot of false positives for those simulations that had 5 true fixed effects:
 
 ```{r}
-
-
 gene_supp_nz5_fp <- bgr_nz5 %>% 
   group_by(penalty, p, predictor_cor) %>%
   mutate(outlier = fp > quantile(fp, .75) + IQR(fp) * 1.5) %>%
@@ -1178,15 +1175,15 @@ ggsave(
 )
 ```
 ```{r}
-df_true <- data.frame(y_value = -3)
-gwas_main_beta8 <- best_gwas_results %>%
+df_true <- data.frame(y_value = 3)
+gwas_main_beta4 <- best_gwas_results %>%
   filter(q == 3) %>%
   group_by(penalty, cov_str) %>%
-  mutate(outlier = beta_8 > quantile(beta_8, .75) + IQR(beta_8) * 1.5 | 
-           beta_8 < quantile(beta_8, .25) - IQR(beta_8) * 1.5) %>%
+  mutate(outlier = beta_4 > quantile(beta_4, .75) + IQR(beta_4) * 1.5 | 
+           beta_4 < quantile(beta_4, .25) - IQR(beta_4) * 1.5) %>%
   ungroup() %>%
   {
-  ggplot(data =., aes(y = beta_8, x = cov_str, 
+  ggplot(data =., aes(y = beta_4, x = cov_str, 
                       col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9), 
                outlier.shape = NA) +
@@ -1197,17 +1194,17 @@ gwas_main_beta8 <- best_gwas_results %>%
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
   geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
-  labs(y = TeX("$\\beta_8$"), x = TeX("$\\Psi_\\theta$ structure")) +
+  labs(y = TeX("$\\beta_4$"), x = TeX("$\\Psi_\\theta$ structure")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_mine()
 }
-gwas_main_beta8
+gwas_main_beta4
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas/gwas_main_beta8.pdf",
+  "../revised_plots/gwas/gwas_main_beta4.pdf",
   gwas_main_beta8,
   width = 20,
   height = 8,
@@ -1610,7 +1607,9 @@ otu_supp_fp_bsf <- best_otu_results  %>%
   geom_point(pch = 21, #aes(alpha = plot),
              position = position_jitter(height = 0, width = 0.1)) +
   facet_wrap(~ otu_cor, nrow = 2) +
-  labs(y = "false positive rate", x = TeX("# random effects ($q$)")) + 
+  labs(y = "false positive rate", 
+       x = TeX("# random effects ($q$)"),
+       color = "network") + 
   theme(legend.position = "none",
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
@@ -1684,7 +1683,9 @@ otu_supp_tp_bsf <- best_otu_results  %>%
   geom_text(data = counts, aes(q, 11, label = cnt_perfect),
             show.legend = FALSE, size = 5) +
   facet_wrap(~ otu_cor, nrow = 2) +
-  labs(y = "# true positives (out of 11)", x = TeX("# random effects ($q$)")) + 
+  labs(y = "# true positives (out of 11)", 
+       x = TeX("# random effects ($q$)"),
+       color = "network") + 
   scale_y_continuous(labels = scales::label_number(accuracy = 1), 
                      limits = c(0,12), breaks = c(6,11)) +
   theme(legend.position = "none",
@@ -1883,6 +1884,35 @@ ggsave(
 )
 ```
 
+## Variance components
+
+```{r}
+df_true <- data.frame(parameter = rep(c(1, 2, 3), 6), 
+                      y_value = rep(c(.56, 1, 1), 6), 
+                      correlation = rep(unique(best_otu_results$otu_cor), 
+                                        each = 3))
+
+var_gwas_diag <- best_otu_results %>%
+  filter(cov_str == "diagonal") %>%
+  pivot_longer(cols = c(psi_1, psi_5, psi_9), 
+               names_to = "parameter", values_to = "estimate") %>%
+  ggplot(aes(parameter, estimate)) +
+  geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
+  coord_cartesian(ylim = c(0,2)) +
+  geom_segment(data = df_true, aes(x = parameter-.4, xend = parameter+.4,
+                                   y = y_value, yend = y_value,
+                                   linetype = "True Parameter"),
+               show.legend = FALSE) +
+  facet_wrap(~ otu_cor) +
+  labs(y = "Estimated parameter", x = TeX("Diagonal $\\Psi")) +
+  scale_x_discrete(labels = c( TeX("$\\Psi_{1,1}"), TeX("$\\Psi_{2,2}"), TeX("$\\Psi_{3,3}"))) +
+  theme(legend.position = "top",
+        legend.title = element_blank(),
+        axis.ticks.x = element_blank(),
+        text = element_text(size = 18)) +
+  scale_color_mine()
+var_gwas_diag
+```
 
 
 

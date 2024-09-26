@@ -4,18 +4,18 @@ using ZipFile
 using CSV
 using DataFrames
 using DelimitedFiles
-using Serialization
+using Serialization 
 
-r = ZipFile.Reader("data/dim1000_random1_rho0.0_nz10_covid.zip")
-λs = Float64.(40:1:45)
-res_matrix = Array{Any}(undef, 1, length(λs) + 1)
+r = ZipFile.Reader("data/dim1000_random3_rho0.0_nz10_covdiag.zip")
+data_files = r.files[34:36]
+λs =30:1:40
+res_matrix = Array{Any}(undef, length(data_files), length(λs) + 1)
 # data_dir = "data/OTU/random1_covid"
 # file_names = readdir(data_dir)
 # filter!(x -> occursin("rs_data_LinShi", x), file_names)
 # println(length(file_names))
-  
 
-for (i, f) in enumerate(file[2:end]) #First file is just the folder
+for (i, f) in enumerate(data_files) #First file is just the folder
 #for (i, f) in enumerate(file_names)
 
     println("Filename: $(f.name)")
@@ -32,43 +32,38 @@ for (i, f) in enumerate(file[2:end]) #First file is just the folder
 
     X = Matrix{Float64}(df[:, X_names])
     G = Matrix{Float64}(df[:, G_names])
+    #X = [X[:,1] G[:,1] X[:,2:3]]
+    #G = G[:,2:end]
+    #println(size(X))
+    #println(size(G))
+    #sleep(1)
     y = df[:, end]
     control = Control()
     control.trace = 3
-    control.tol = 1e-3
+    control.tol = 1e-2
     #control.cov_int = (-5, 5)
     #control.var_int = (0, 1000)
 
     for (j, λ) in enumerate(λs)
-
         println("λ is $λ")
-        try
-            est = lmmlasso(X, G, y, grp;
-                standardize=false, penalty="lasso",
-                λ=λ, scada=3.7, wts=fill(1.0, size(G)[2]),
-                init_coef=nothing, ψstr="diag", control=control)
 
-            println("Model converged! Hurrah!")
-            println("Initial number of non-zeros is $(est.init_nz)")
-            println("Final number of non-zeros is $(est.nz)")
-            println("Log likelihood is $(est.log_like)")
-            println("BIC is $(est.bic)")
-            println("Estimated L is $(est.L)")
-            println("Estimated σ² is $(est.σ²)")
+        est = hdmm(X, G, y, grp;
+            standardize=true, penalty="lasso",
+            λ=λ, ψstr="diag", control=control) 
+        # print stuff
+        println("Model converged! Hurrah!")
+        println("Initial number of non-zeros is $(est.init_nz)")
+        println("Final number of non-zeros is $(est.nz)")
+        println("Log likelihood is $(est.log_like)")
+        println("BIC is $(est.bic)")
+        println("Estimated L is $(est.L)")
+        println("Estimated σ² is $(est.σ²)")
 
-            #Insert the resulting fit to the results matrix but remove the
-            #field that has all the data in it for memory efficiency 
-            res_matrix[i, j+1] = Base.structdiff(est, (data=1, weights=1, fitted=1, resid=1))
-
-        catch e
-            println("An error occurred in file $(f), λ = $λ: $e")
-            res_matrix[i, j+1] = "error"
-        end
-
-
+        #Insert the resulting fit to the results matrix but first alter some fields holding large objects
+        res_matrix[i, j+1] = est
     end
-
 end
+        
 
 #serialize("sim_results/OTU/LinShi/yesstand_rs_random1_covid_scad-results.txt", res_matrix)
 

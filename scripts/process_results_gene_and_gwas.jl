@@ -43,7 +43,7 @@ for setting_name in setting_names
         # Filter out fits that resulted in errors
         data_good_results = filter(x -> !isa(x, String), data_results)
 
-        # Sort rows and extract best results
+        # Sort rows and extract results from best two λs
         data_sorted_results = sort(data_good_results, by = x -> x.bic)
         k = min(length(data_sorted_results), 2)
         data_best_results = data_sorted_results[1:k]
