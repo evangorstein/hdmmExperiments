@@ -38,10 +38,9 @@ names(corr.labs) <- c("Yes", "No")
 
 # Read in the data:
 ```{r, message=FALSE}
-gene_results <- read_csv("../sim_results/best_results.csv") 
+gene_results <- read_csv("../sim_results/gene/best_results.csv") 
 gwas_results <- read_csv("../sim_results/gwas/best_results.csv")
-otu_lr_results <- read_csv("../sim_results/OTU/LinShi/LinShi_lr_best_results.csv")
-otu_results <- read_csv("../sim_results/OTU/spring/best_results.csv")
+otu_results <- read_csv("../sim_results/OTU/best_results.csv")
 ```
 
 These data frames contain the fits with the best two BIC's (across all lambdas) for each dataset generated under each setting.
@@ -152,7 +151,7 @@ gene_main_fp
 
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene/gene_main_fp.pdf",
+  "../plots/gene/gene_main_fp.pdf",
   gene_main_fp,
   width = 20,
   height = 15,
@@ -168,7 +167,7 @@ We can similarly create the plot of true positives for those simulations for whi
 bgr_nz10 %>%
   filter(q==3) %>%
   select(penalty, cov_str, predictor_cor, tp) %>%
-  write_csv("../true_positive_tables/gene/gene_main_tp.csv")
+  write_csv("../sim_results/true_positive_tables/gene/gene_main_tp.csv")
 
 
 ```
@@ -217,7 +216,7 @@ gene_main_tp <- bgr_nz10 %>%
 gene_main_tp
 
 ggsave( 
-  "../revised_plots/gene/gene_main_tp.pdf",
+  "../plots/gene/gene_main_tp.pdf",
   gene_main_tp,
   width = 20,
   height = 15,
@@ -228,7 +227,7 @@ ggsave(
 Let's combine these using patchworks:
 ```{r, warning=FALSE}
 gene_main_fp + gene_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene/gene_main_select.pdf", width = 40, height = 15, units = "cm")
+ggsave("../plots/gene/gene_main_select.pdf", width = 40, height = 15, units = "cm")
 ```
 
 
@@ -277,7 +276,7 @@ gene_supp_nz5_fp <- bgr_nz5 %>%
 
 gene_supp_nz5_fp
 ggsave(
-    "../revised_plots/gene/gene_supp_nz5_fp.pdf",
+    "../plots/gene/gene_supp_nz5_fp.pdf",
     gene_supp_nz5_fp,
     width = 15,
     height = 15,
@@ -320,7 +319,7 @@ gene_supp_nz5_tp <- bgr_nz5 %>%
 
 gene_supp_nz5_tp
 ggsave(
-    "../revised_plots/gene/gene_supp_nz5_tp.pdf",
+    "../plots/gene/gene_supp_nz5_tp.pdf",
     gene_supp_nz5_tp,
     width = 15,
     height = 15,
@@ -367,7 +366,7 @@ gene_supp_nz10_fp <- bgr_nz10 %>%
 gene_supp_nz10_fp
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene/gene_supp_nz10_fp.pdf",
+  "../plots/gene/gene_supp_nz10_fp.pdf",
   gene_supp_nz10_fp,
   width = 15,
   height = 15,
@@ -420,7 +419,7 @@ gene_supp_nz10_tp <- bgr_nz10 %>%
 gene_supp_nz10_tp
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene/gene_supp_nz10_tp.pdf",
+  "../plots/gene/gene_supp_nz10_tp.pdf",
   gene_supp_nz10_tp,
   width = 15,
   height = 15,
@@ -431,7 +430,7 @@ ggsave(
 Now we can combine the above 4 plots with patchwork:
 ```{r, warning=FALSE}
 (gene_supp_nz5_fp + gene_supp_nz5_tp) / (gene_supp_nz10_fp + gene_supp_nz10_tp) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene/gene_supp_select.pdf", width = 40, height = 30, units = "cm")
+ggsave("../plots/gene/gene_supp_select.pdf", width = 40, height = 30, units = "cm")
 ```
 
 
@@ -494,7 +493,7 @@ gene_main_beta2 <- bgr_nz10 %>%
 gene_main_beta2
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene/gene_main_beta2.pdf",
+  "../plots/gene/gene_main_beta2.pdf",
   gene_main_beta2,
   width = 20,
   height = 15,
@@ -529,7 +528,7 @@ gene_main_beta3 <- bgr_nz10 %>%
 gene_main_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene/gene_main_beta3.pdf",
+  "../plots/gene/gene_main_beta3.pdf",
   gene_main_beta3,
   width = 20,
   height = 15,
@@ -580,7 +579,7 @@ gene_main_beta4 <- bgr_nz10 %>%
 
 gene_main_beta4
 ggsave(
-  "../revised_plots/gene/gene_main_beta4.pdf",
+  "../plots/gene/gene_main_beta4.pdf",
   gene_main_beta4,
   width = 20,
   height = 15,
@@ -591,7 +590,7 @@ ggsave(
 Now we can combine the above 2 plots with patchwork:
 ```{r warning=FALSE}
 gene_main_beta3 + gene_main_beta4 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene/gene_main_est.pdf", width = 40, height = 15, units = "cm")
+ggsave("../plots/gene/gene_main_est.pdf", width = 40, height = 15, units = "cm")
 ```
 Check relationship between beta_3 and beta_4 for Lasso with correlation
 
@@ -608,22 +607,99 @@ compensation <- bgr_nz10 %>%
 
 compensation
 ggsave(
-  "../revised_plots/gene/compensation.pdf",
+  "../plots/gene/compensation.pdf",
   compensation,
   width = 20,
   height = 15,
   units = "cm"
 )
 ```
+```{r}
+compensation_7 <- bgr_nz10 %>%
+  filter(q == 3, penalty == "LASSO") %>%
+  ggplot(aes(x = beta_4, y = beta_3, col=penalty)) +
+  geom_hline(yintercept = 4)+
+  geom_vline(xintercept = 3)+
+  geom_point(pch = 21)+
+  facet_grid(predictor_cor~cov_str) +
+  labs(y = TeX("$\\beta_3$"), x = TeX("$\\beta_4$")) +
+  scale_color_mine()
+
+compensation_7
+```
 
 ```{r}
 bgr_nz10 %>%
   filter(q == 3, penalty == "LASSO", predictor_cor == "Yes") %>%
-  filter(beta_4 != 0) %>%
+  filter(beta_10 != 0) %>%
   group_by(cov_str) %>%
   summarise(cor(beta_3,beta_4))
 ```
 
+Let's create a plot that shows parameter estimates for all non-zero coefficients. We do this for a specific setting, the setting with correlated features and 3 random effects with unstructured covariance, at once
+
+```{r}
+df_long <- bgr_nz10 %>%
+  filter(q == 3) %>%
+  pivot_longer(cols = num_range("beta_", 1:10), names_to = "coefficient", values_to = "estimate") %>%
+  select(data_id, penalty, coefficient, predictor_cor, cov_str, estimate) %>%
+  mutate(coefficient = factor(coefficient, levels = paste0("beta_", 1:10)))
+
+df_true <- data.frame(
+  coefficient = factor(paste0("beta_", 1:10), levels = paste0("beta_", 1:10)), 
+  y_value = c(1,2,4,3,3,-1,5,-3,2,2)
+)
+```
+
+```{r}
+df_long <- filter(df_long,
+                  cov_str == "unstructured", 
+                  predictor_cor == "Yes")
+all_coefs <- ggplot(df_long, aes(x = coefficient, y = estimate)) +
+  geom_boxplot(aes(col = penalty),
+               position = position_dodge(width = 0.9), 
+               outlier.shape = NA) +
+  geom_point(aes(col = penalty),
+             pch = 21,
+             position = position_jitterdodge(
+               dodge.width = 0.9,
+               jitter.height = 0,
+               jitter.width = 0.2)) +
+  geom_segment(data = df_true, 
+               aes(x = as.numeric(coefficient) - .4, 
+                   xend = as.numeric(coefficient) + .4,
+                   y = y_value, yend = y_value,
+                   linetype = "True Parameter"),
+               color = "black",
+               show.legend = FALSE) +
+   # facet_grid(cov_str ~ predictor_cor, 
+   #           labeller = labeller(predictor_cor = corr.labs)) +
+  scale_x_discrete(labels = c( TeX("$\\beta_{1}"),
+                               TeX("$\\beta_{2}"),
+                               TeX("$\\beta_{3}"),
+                               TeX("$\\beta_{4}"),
+                               TeX("$\\beta_{5}"),
+                               TeX("$\\beta_{6}"),
+                               TeX("$\\beta_{7}"),
+                               TeX("$\\beta_{8}"),
+                               TeX("$\\beta_{9}"),
+                               TeX("$\\beta_{10}"))) +
+  scale_y_continuous(limits = c(-3.5,NA), 
+                     labels = scales::label_number(accuracy=1),
+                     n.breaks = 6) +
+  theme(legend.position = "top",
+        text = element_text(size = 18)) +
+  scale_color_mine()
+
+all_coefs
+ggsave(
+  "../plots/gene/all_coefs.pdf",
+  all_coefs,
+  width = 20,
+  height = 15,
+  units = "cm"
+)
+```
 
 ### Supplementary material
 
@@ -663,7 +739,7 @@ gene_supp_beta3 <- bgr_nz10 %>%
 gene_supp_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gene/gene_supp_beta3.pdf",
+  "../plots/gene/gene_supp_beta3.pdf",
   gene_supp_beta3,
   width = 15,
   height = 15,
@@ -706,7 +782,7 @@ gene_supp_beta4 <- bgr_nz10 %>%
 
 gene_supp_beta4
 ggsave(
-  "../revised_plots/gene/gene_main_beta4.pdf",
+  "../plots/gene/gene_main_beta4.pdf",
   gene_supp_beta4,
   width = 15,
   height = 15,
@@ -741,7 +817,7 @@ gene_supp_nz5_beta3 <- bgr_nz5 %>%
 
 gene_supp_nz5_beta3
 ggsave(
-    "../revised_plots/gene/gene_supp_nz5_beta3.pdf",
+    "../plots/gene/gene_supp_nz5_beta3.pdf",
     gene_supp_nz5_beta3,
     width = 15,
     height = 15,
@@ -774,7 +850,7 @@ gene_supp_nz5_beta4 <- bgr_nz5 %>%
 
 gene_supp_nz5_beta4
 ggsave(
-    "../revised_plots/gene/gene_supp_nz5_beta4.pdf",
+    "../plots/gene/gene_supp_nz5_beta4.pdf",
     gene_supp_nz5_beta4,
     width = 15,
     height = 15,
@@ -788,7 +864,7 @@ Now we can combine the above 4 plots for our supplementary materials estimation 
 
 ```{r}
 (gene_supp_nz5_beta3 + gene_supp_nz5_beta4) / (gene_supp_beta3 + gene_supp_beta4) + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene/gene_supp_est.pdf", width = 40, height = 40, units = "cm")
+ggsave("../plots/gene/gene_supp_est.pdf", width = 40, height = 40, units = "cm")
 ```
 
 ## Variance components
@@ -820,7 +896,7 @@ var_ge_scalar
 
 
 ggsave(
-  "../revised_plots/gene/var_ge_scalar.pdf",
+  "../plots/gene/var_ge_scalar.pdf",
   var_ge_scalar,
   width = 20,
   height = 15,
@@ -855,7 +931,7 @@ var_ge_diag <- bgr_nz10 %>%
 var_ge_diag
 
 ggsave(
-  "../revised_plots/gene/var_ge_diag.pdf",
+  "../plots/gene/var_ge_diag.pdf",
   var_ge_diag,
   width = 20,
   height = 15,
@@ -897,7 +973,7 @@ var_ge_sym <- bgr_nz10 %>%
   scale_color_mine()
 var_ge_sym
 ggsave(
-  "../revised_plots/gene/var_ge_sym.pdf",
+  "../plots/gene/var_ge_sym.pdf",
   var_ge_sym,
   width = 20,
   height = 15,
@@ -909,7 +985,7 @@ Combine into final plot
 
 ```{r}
 (var_ge_scalar + var_ge_diag) / var_ge_sym + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gene/var_ge_comp.pdf", width = 40, height = 30, units = "cm")
+ggsave("../plots/gene/var_ge_comp.pdf", width = 40, height = 30, units = "cm")
 ```
 
 # GWAS
@@ -971,7 +1047,7 @@ gwas_main_fp <- best_gwas_results  %>%
 gwas_main_fp
 
 ggsave(
-  "../revised_plots/gwas/gwas_main_fp.pdf",
+  "../plots/gwas/gwas_main_fp.pdf",
   gwas_main_fp,
   width = 20,
   height = 15,
@@ -1029,7 +1105,7 @@ gwas_main_tp <- best_gwas_results  %>%
 gwas_main_tp
 
 ggsave(
-  "../revised_plots/gwas/gwas_main_tp.pdf",
+  "../plots/gwas/gwas_main_tp.pdf",
   gwas_main_fp,
   width = 20,
   height = 8,
@@ -1043,7 +1119,7 @@ Now let's add them together
 
 ```{r}
 gwas_main_fp + gwas_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas/gwas_main_select.pdf", width = 40, height = 10, units = "cm")
+ggsave("../plots/gwas/gwas_main_select.pdf", width = 40, height = 10, units = "cm")
 ```
 
 
@@ -1073,7 +1149,7 @@ gwas_supp_fp <- best_gwas_results  %>%
 gwas_supp_fp
 
 ggsave(
-  "../revised_plots/gwas/gwas_supp_fp.pdf",
+  "../plots/gwas/gwas_supp_fp.pdf",
   gwas_main_fp,
   width = 20,
   height = 8,
@@ -1115,7 +1191,7 @@ gwas_supp_tp <- best_gwas_results  %>%
 gwas_supp_tp
 
 ggsave(
-  "../revised_plots/gwas/gwas_supp_tp.pdf",
+  "../plots/gwas/gwas_supp_tp.pdf",
   gwas_supp_tp,
   width = 20,
   height = 8,
@@ -1127,7 +1203,7 @@ Now combine:
 
 ```{r}
 gwas_supp_fp + gwas_supp_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas/gwas_supp_select.pdf", width = 40, height = 10, units = "cm")
+ggsave("../plots/gwas/gwas_supp_select.pdf", width = 40, height = 10, units = "cm")
 ```
 
 
@@ -1167,7 +1243,7 @@ gwas_main_beta3 <- best_gwas_results %>%
 gwas_main_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas/gwas_main_beta3.pdf",
+  "../plots/gwas/gwas_main_beta3.pdf",
   gwas_main_beta3,
   width = 20,
   height = 8,
@@ -1204,7 +1280,7 @@ gwas_main_beta4 <- best_gwas_results %>%
 gwas_main_beta4
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas/gwas_main_beta4.pdf",
+  "../plots/gwas/gwas_main_beta4.pdf",
   gwas_main_beta8,
   width = 20,
   height = 8,
@@ -1217,7 +1293,7 @@ Combine
 
 ```{r}
 gwas_main_beta3 + gwas_main_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas/gwas_main_est.pdf", width = 40, height = 10, units = "cm")
+ggsave("../plots/gwas/gwas_main_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
@@ -1252,7 +1328,7 @@ gwas_supp_beta3 <- best_gwas_results %>%
 gwas_supp_beta3
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas/gwas_supp_beta3.pdf",
+  "../plots/gwas/gwas_supp_beta3.pdf",
   gwas_supp_beta3,
   width = 20,
   height = 8,
@@ -1290,7 +1366,7 @@ gwas_supp_beta8 <- best_gwas_results %>%
 gwas_supp_beta8
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../revised_plots/gwas/gwas_supp_beta8.pdf",
+  "../plots/gwas/gwas_supp_beta8.pdf",
   gwas_supp_beta8,
   width = 20,
   height = 8,
@@ -1301,7 +1377,7 @@ Combine
 
 ```{r}
 gwas_supp_beta3 + gwas_supp_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
+ggsave("../plots/gwas/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
@@ -1327,7 +1403,7 @@ var_gwas_scalar <- best_gwas_results %>%
 var_gwas_scalar
 
 ggsave(
-  "../revised_plots/gwas/var_gwas_scalar.pdf",
+  "../plots/gwas/var_gwas_scalar.pdf",
   var_gwas_scalar,
   width = 20,
   height = 15,
@@ -1384,7 +1460,7 @@ var_gwas_diag <- best_gwas_results %>%
 var_gwas_diag
 
 ggsave(
-  "../revised_plots/gwas/var_gwas_diag.pdf",
+  "../plots/gwas/var_gwas_diag.pdf",
   var_gwas_diag,
   width = 20,
   height = 30,
@@ -1454,7 +1530,7 @@ var_gwas_sym <- best_gwas_results %>%
 var_gwas_sym
 
 ggsave(
-  "../revised_plots/gwas/var_gwas_sym.pdf",
+  "../plots/gwas/var_gwas_sym.pdf",
   var_gwas_sym,
   width = 20,
   height = 15,
@@ -1465,7 +1541,7 @@ Combine into final plot
 
 ```{r}
 (var_gwas_scalar + var_gwas_diag) / var_gwas_sym + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/gwas/var_gwas_comp.pdf", width = 40, height = 30, units = "cm")
+ggsave("../plots/gwas/var_gwas_comp.pdf", width = 40, height = 30, units = "cm")
 ```
 
 # Microbiome
@@ -1527,7 +1603,7 @@ otu_main_fp <- best_otu_results  %>%
 
 otu_main_fp
 ggsave(
-  "../revised_plots/otu/otu_main_fp.pdf",
+  "../plots/otu/otu_main_fp.pdf",
   otu_main_fp,
   width = 20,
   height = 15,
@@ -1575,7 +1651,7 @@ otu_main_tp <- best_otu_results  %>%
 otu_main_tp
 
 ggsave(
-  "../revised_plots/otu/otu_main_tp.pdf",
+  "../plots/otu/otu_main_tp.pdf",
   otu_main_tp,
   width = 20,
   height = 15,
@@ -1588,7 +1664,7 @@ Combine false and true positives
 
 ```{r}
 otu_main_fp + otu_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') 
-ggsave("../revised_plots/otu/otus_main_select.pdf", width = 40, height = 10, units = "cm")
+ggsave("../plots/otu/otus_main_select.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
@@ -1618,7 +1694,7 @@ otu_supp_fp_bsf <- best_otu_results  %>%
 
 otu_supp_fp_bsf
 ggsave(
-  "../revised_plots/otu/otu_supp_fp_bsf.pdf",
+  "../plots/otu/otu_supp_fp_bsf.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1654,7 +1730,7 @@ otu_supp_fp_others <- best_otu_results  %>%
 
 otu_supp_fp_others
 ggsave(
-  "../revised_plots/otu/otu_supp_fp_others.pdf",
+  "../plots/otu/otu_supp_fp_others.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1696,7 +1772,7 @@ otu_supp_tp_bsf <- best_otu_results  %>%
 
 otu_supp_tp_bsf
 ggsave(
-  "../revised_plots/otu/otu_supp_tp_bsf.pdf",
+  "../plots/otu/otu_supp_tp_bsf.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1735,7 +1811,7 @@ otu_supp_tp_others <- best_otu_results  %>%
 
 otu_supp_tp_others
 ggsave(
-  "../revised_plots/otu/otu_supp_tp_others.pdf",
+  "../plots/otu/otu_supp_tp_others.pdf",
   otu_supp_fp_bsf,
   width = 20,
   height = 10,
@@ -1746,13 +1822,13 @@ Combine into single plot
 
 ```{r}
 otu_supp_fp_bsf + otu_supp_tp_bsf + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../revised_plots/otu/otu_supp_select_bsf.pdf", width = 40, height = 15, units = "cm")
+ggsave("../plots/otu/otu_supp_select_bsf.pdf", width = 40, height = 15, units = "cm")
 ```
 
 
 ```{r}
 otu_supp_fp_others + otu_supp_tp_others + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A')
-ggsave("../revised_plots/otu/otu_supp_select_others.pdf", width = 40, height = 15, units = "cm")
+ggsave("../plots/otu/otu_supp_select_others.pdf", width = 40, height = 15, units = "cm")
 ```
 
 ## Estimation
@@ -1792,7 +1868,7 @@ otu_main_betagrp <- best_otu_results %>%
 otu_main_betagrp
 
 ggsave(
-  "../revised_plots/otu/otu_main_betagrp.pdf",
+  "../plots/otu/otu_main_betagrp.pdf",
   otu_main_betagrp,
   width = 20,
   height = 10,
@@ -1833,7 +1909,7 @@ otu_supp_betagrp_bsf <- best_otu_results %>%
 otu_supp_betagrp_bsf
 
 ggsave(
-  "../revised_plots/otu/otu_supp_betagrp_bsf.pdf",
+  "../plots/otu/otu_supp_betagrp_bsf.pdf",
   otu_supp_betagrp_bsf,
   width = 20,
   height = 10,
@@ -1876,7 +1952,7 @@ otu_supp_betagrp_other <- best_otu_results %>%
 otu_supp_betagrp_other
 
 ggsave(
-  "../revised_plots/otu/otu_supp_betagrp_other.pdf",
+  "../plots/otu/otu_supp_betagrp_other.pdf",
   otu_supp_betagrp_other,
   width = 20,
   height = 10,
