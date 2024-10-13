@@ -13,6 +13,7 @@ library(patchwork)
 library(RColorBrewer)
 library(latex2exp)
 library(kableExtra)
+library(directlabels)
 # set plotting theme -----------
 theme_set(theme_bw())
 theme_update(panel.grid = element_blank())
@@ -701,6 +702,25 @@ ggsave(
 )
 ```
 
+Let's get MC means and sds of beta_8 estimates under SCAD penalty:
+
+```{r}
+gene_beta8 <- bgr_nz10 %>%
+  filter(penalty == "SCAD") %>%
+  select(setting, data_id, beta_8) %>%
+  mutate(identified = beta_8!=0) %>%
+  filter(identified) %>%
+  group_by(setting) %>%
+  summarise(recovered = n(), mean = mean(beta_8), 
+            bias = mean + 3, sd = sd(beta_8))
+
+gene_beta8
+```
+
+
+
+
+
 ### Supplementary material
 
 Distribution of $beta_3$ in settings with 1 and 5 random effects. In the first, $beta_3$ is penalized; in the latter, it is unpenalized.
@@ -1064,7 +1084,7 @@ best_gwas_results %>%
   ungroup() %>%
   filter(q==3) %>%
   select(penalty, cov_str, tp) %>%
-  write_csv("../true_positive_tables/gwas/gwas_main_tp.csv")
+  write_csv("../sim_results/true_positive_tables/gwas/gwas_main_tp.csv")
 
 
 ```
@@ -1281,7 +1301,7 @@ gwas_main_beta4
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
   "../plots/gwas/gwas_main_beta4.pdf",
-  gwas_main_beta8,
+  gwas_main_beta4,
   width = 20,
   height = 8,
   units = "cm"
@@ -1292,7 +1312,7 @@ ggsave(
 Combine
 
 ```{r}
-gwas_main_beta3 + gwas_main_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
+gwas_main_beta3 + gwas_main_beta4 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
 ggsave("../plots/gwas/gwas_main_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
@@ -1379,6 +1399,20 @@ Combine
 gwas_supp_beta3 + gwas_supp_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
 ggsave("../plots/gwas/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
 
+```
+
+Let's get MC means and sds of beta_8 estimates in all GWAS settings with SCAD penalty:
+```{r}
+gwas_beta8 <- best_gwas_results %>% 
+  filter(penalty == "SCAD") %>%
+  select(setting, data_id, beta_8) %>%
+  mutate(identified = beta_8!=0) %>%
+    filter(identified) %>%
+  group_by(setting) %>%
+  summarise(recovered = n(), mean = mean(beta_8), 
+            bias = mean + 3, sd = sd(beta_8))
+
+gwas_beta8
 ```
 
 ## Variance components
@@ -1618,7 +1652,7 @@ best_otu_results %>%
   ungroup() %>%
   filter(q==3) %>%
   select(q, otu_cor, cov_str, tp) %>%
-  write_csv("../true_positive_tables/otu/otu_main_tp.csv")
+  write_csv("../sim_results/true_positive_tables/otu/otu_main_tp.csv")
 ```
 
 
@@ -1960,6 +1994,20 @@ ggsave(
 )
 ```
 
+Let's get MC means and sds of beta_8 estimates in all OTU settings:
+```{r}
+otu_beta8 <- best_otu_results %>% 
+  select(setting, otu_cor, data_id, beta_9) %>%
+  mutate(identified = beta_9!=0) %>%
+  filter(identified) %>%
+  group_by(setting, otu_cor) %>%
+  summarise(recovered = n(), mean = mean(beta_9), 
+            bias = mean + 3, sd = sd(beta_9))
+
+otu_beta8
+```
+
+
 ## Variance components
 
 ```{r}
@@ -1991,12 +2039,51 @@ var_gwas_diag
 ```
 
 
+# Inter-omics comparison
+
+```{r}
+beta8_results <- bind_rows(list(gene = gene_beta8, 
+                                gwas = gwas_beta8, 
+                                otu = otu_beta8), .id = "dtype") %>%
+  mutate(cov_str = recode_factor(
+      str_extract(setting, "cov(.*)_", group = 1),
+      id = "scalar", diag = "diagonal", sym = "unstructured"
+      ),
+    q = str_c("q=", str_extract(setting, "random([0-9])", group = 1)),
+    cov_str = factor(fct_cross(q, cov_str),
+                     levels = c("q=1:scalar", "q=3:scalar", "q=3:diagonal", 
+                                "q=3:unstructured", "q=5:scalar")), 
+    cor_features = str_extract(setting, "rho([0-9]+\\.[0-9]+)", group = 1),
+    cor_features = if_else(cor_features == "0.0", "uncorrelated", "correlated")) %>%
+  mutate(grouping = case_when(
+    dtype == "otu" ~ paste0("otu:", otu_cor),
+    dtype == "gene" ~ paste0("gene:", cor_features),
+    dtype == "gwas" ~ "gwas"
+  ))
+
+```
 
 
 
+```{r}
+ggplot(beta8_results, aes(cov_str, sd, color = dtype)) +
+  geom_line(aes(group = grouping)) +
+  geom_point() +
+  labs(color = "Omics type",
+       x = "Random effect structure", 
+       y = TeX("$SD(\\hat{\\beta_8} | \\hat{\\beta_8} \\neq 0)$")) +
+  expand_limits(x = c(NA, 6)) +
+  geom_dl(aes(label=grouping), method = list("last.points", dl.trans(x=x+.2), cex=0.7))
 
-
-
+ggplot(beta8_results, aes(cov_str, 100-recovered, color = dtype)) +
+  geom_line(aes( group = grouping)) +
+  geom_point() +
+  labs(color = "Omics type", 
+       x = "Random effect structure", 
+       y = TeX("# times $\\beta_8$ incorrectly estimated zero$")) + 
+  expand_limits(x = c(NA, 6)) +
+  geom_dl(aes(label=grouping), method = list("last.points", dl.trans(x=x+.2), cex=.7))
+```
 
 
 
