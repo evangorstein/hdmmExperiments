@@ -26,7 +26,7 @@ control.trace = 3
 control.tol = 1e-3
 Random.seed!(1234)
 # We choose to standardize because the data has been library sum scaled and so is very small numbers
-int_fit = hdmm(X, otus, y, grp; 
+@time int_fit = hdmm(X, otus, y, grp; 
     penalty="scad", λ=λ, ψstr="ident", control=control)
 
 save_object("data/real/OTU/otu_fit.jld2", int_fit)

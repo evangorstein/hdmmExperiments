@@ -94,13 +94,9 @@ Z = gene_expressions[:, rand_idx]
 G = gene_expressions[:, Not(rand_idx)]
 λ = 45
 Random.seed!(1234)
-try 
-    # we choose to standardize
-    global final_fit = lmmlasso(X, G, y, grp, Z; penalty="scad", λ=λ, ψstr="diag", control=control)
-    save_object("data/real/gene_expressions/final_fit.jld2", final_fit)
-catch e
-    println("An error occurred while fitting the final model: $e")
-end
+@time final_fit = hdmm(X, G, y, grp, Z; penalty="scad", λ=λ, ψstr="diag", control=control)
+save_object("data/real/gene_expressions/final_fit.jld2", final_fit)
+
 
 # Inspection of final_fit
 final_fit = load("data/real/gene_expressions/final_fit.jld2")["single_stored_object"]

@@ -702,23 +702,34 @@ ggsave(
 )
 ```
 
-Let's get MC means and sds of beta_8 estimates under SCAD penalty:
+Let's get a summary of coefficient estimates under SCAD penalty for later use (see section "Inter-omics comparison":
 
 ```{r}
-gene_beta8 <- bgr_nz10 %>%
-  filter(penalty == "SCAD") %>%
-  select(setting, data_id, beta_8) %>%
-  mutate(identified = beta_8!=0) %>%
-  filter(identified) %>%
-  group_by(setting) %>%
-  summarise(recovered = n(), mean = mean(beta_8), 
-            bias = mean + 3, sd = sd(beta_8))
 
-gene_beta8
+coef_vals <- c(-1,5,-3,2,2)
+
+extract_coef <- function(coef_name, df) {
+  coef_index = as.integer(str_extract(coef_name, "\\d+"))
+  coef_val = coef_vals[coef_index - 5]
+  coef = as.name(coef_name)
+  coef_df <- df %>%
+    filter(penalty == "SCAD") %>%
+    select(setting, data_id, {{coef}}) %>%
+    mutate(identified = {{coef}}!=0) %>%
+    filter(identified) %>%
+    group_by(setting) %>%
+    summarise(recovered = n(), mean = mean({{coef}}), 
+              bias = mean - coef_val, sd = sd({{coef}})) %>%
+    mutate(coef = coef_name)
+  return(coef_df)
+}
+
+gene_coefs <- map(paste("beta", 6:10, sep = "_"),
+                  extract_coef, df = bgr_nz10) %>%
+  list_rbind()
+
+gene_coefs
 ```
-
-
-
 
 
 ### Supplementary material
@@ -1357,15 +1368,15 @@ ggsave(
 ```
 
 ```{r}
-df_true <- data.frame(y_value = -3)
-gwas_supp_beta8 <- best_gwas_results %>%
+df_true <- data.frame(y_value = 3)
+gwas_supp_beta4 <- best_gwas_results %>%
   filter(q != 3) %>%
   group_by(penalty, q) %>%
-  mutate(outlier = beta_8 > quantile(beta_8, .75) + IQR(beta_8) * 1.5 | 
-           beta_8 < quantile(beta_8, .25) - IQR(beta_8) * 1.5) %>%
+  mutate(outlier = beta_4 > quantile(beta_4, .75) + IQR(beta_4) * 1.5 | 
+           beta_4 < quantile(beta_4, .25) - IQR(beta_4) * 1.5) %>%
   ungroup() %>%
   {
-  ggplot(data =., aes(y = beta_8, x = q, 
+  ggplot(data =., aes(y = beta_4, x = q, 
                       col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9), 
                outlier.shape = NA) +
@@ -1376,23 +1387,24 @@ gwas_supp_beta8 <- best_gwas_results %>%
                jitter.height = 0,
                jitter.width = 0.2), show.legend  = F) +
   geom_hline(show.legend = FALSE,data = df_true, aes(yintercept = y_value, linetype = "True Parameter")) +
-  labs(y = TeX("$\\beta_8$"), x = TeX("# random effects ($q$)")) +
+  labs(y = TeX("$\\beta_4$"), x = TeX("# random effects ($q$)")) +
   theme(legend.position = "top",
         legend.title = element_blank(),
         axis.ticks.x = element_blank(),
         text = element_text(size = 18)) +
   scale_color_mine()
 }
-gwas_supp_beta8
+gwas_supp_beta4
 #Note that there are fewer than 100 data-sets for some of the lasso settings (but none of the scad settings)!
 ggsave(
-  "../plots/gwas/gwas_supp_beta8.pdf",
-  gwas_supp_beta8,
+  "../plots/gwas/gwas_supp_beta4.pdf",
+  gwas_supp_beta4,
   width = 20,
   height = 8,
   units = "cm"
 )
 ```
+
 Combine 
 
 ```{r}
@@ -1401,18 +1413,13 @@ ggsave("../plots/gwas/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
 
-Let's get MC means and sds of beta_8 estimates in all GWAS settings with SCAD penalty:
+Let's get coefficients estimates in all GWAS settings under SCAD penalty for later use (see section "Inter-omics comparison":
 ```{r}
-gwas_beta8 <- best_gwas_results %>% 
-  filter(penalty == "SCAD") %>%
-  select(setting, data_id, beta_8) %>%
-  mutate(identified = beta_8!=0) %>%
-    filter(identified) %>%
-  group_by(setting) %>%
-  summarise(recovered = n(), mean = mean(beta_8), 
-            bias = mean + 3, sd = sd(beta_8))
+gwas_coefs <- map(paste("beta", 6:10, sep = "_"),
+                  extract_coef, df = best_gwas_results) %>%
+  list_rbind()
 
-gwas_beta8
+gwas_coefs
 ```
 
 ## Variance components
@@ -1994,17 +2001,32 @@ ggsave(
 )
 ```
 
-Let's get MC means and sds of beta_8 estimates in all OTU settings:
+Let's get coefficient estimates in all OTU settings for future usee (see section "Inter-omics comparison":
 ```{r}
-otu_beta8 <- best_otu_results %>% 
-  select(setting, otu_cor, data_id, beta_9) %>%
-  mutate(identified = beta_9!=0) %>%
-  filter(identified) %>%
-  group_by(setting, otu_cor) %>%
-  summarise(recovered = n(), mean = mean(beta_9), 
-            bias = mean + 3, sd = sd(beta_9))
 
-otu_beta8
+extract_coef_otu <- function(coef_name){
+  coef = as.name(coef_name)
+  # OTU starts with beta_7, so must subtract 1
+  coef_index = as.integer(str_extract(coef_name, "\\d+")) - 1
+  coef_new_name = paste0("beta_", coef_index)
+  coef_val = coef_vals[coef_index - 5] 
+  coef_df <- best_otu_results %>%
+    select(setting, otu_cor, data_id, {{coef}}) %>%
+    mutate(identified = {{coef}}!=0) %>%
+    filter(identified) %>%
+    group_by(setting, otu_cor) %>%
+    summarise(recovered = n(), mean = mean({{coef}}), 
+              bias = mean - coef_val, sd = sd({{coef}})) %>%
+    mutate(coef = coef_new_name)
+  return(coef_df)
+}
+
+otu_coefs <- map(paste("beta", 7:11, sep = "_"),
+                  extract_coef_otu) %>%
+  list_rbind()
+
+otu_coefs
+
 ```
 
 
@@ -2042,9 +2064,12 @@ var_gwas_diag
 # Inter-omics comparison
 
 ```{r}
-beta8_results <- bind_rows(list(gene = gene_beta8, 
-                                gwas = gwas_beta8, 
-                                otu = otu_beta8), .id = "dtype") %>%
+
+coef_results <- list(gene = gene_coefs, 
+     gwas = gwas_coefs, 
+     otu = otu_coefs) %>%
+  bind_rows(.id = "dtype") %>%
+  #filter(coef == "beta_8") %>%
   mutate(cov_str = recode_factor(
       str_extract(setting, "cov(.*)_", group = 1),
       id = "scalar", diag = "diagonal", sym = "unstructured"
@@ -2054,35 +2079,62 @@ beta8_results <- bind_rows(list(gene = gene_beta8,
                      levels = c("q=1:scalar", "q=3:scalar", "q=3:diagonal", 
                                 "q=3:unstructured", "q=5:scalar")), 
     cor_features = str_extract(setting, "rho([0-9]+\\.[0-9]+)", group = 1),
-    cor_features = if_else(cor_features == "0.0", "uncorrelated", "correlated")) %>%
+    cor_features = if_else(cor_features == "0.0", "uncorrelated", "correlated"),
+    coef = factor(coef, 
+                  levels = paste0("beta_", 6:10),
+                  labels = paste0("beta[", 6:10, "]")
+                  )
+    ) %>%
   mutate(grouping = case_when(
     dtype == "otu" ~ paste0("otu:", otu_cor),
     dtype == "gene" ~ paste0("gene:", cor_features),
     dtype == "gwas" ~ "gwas"
   ))
-
+  
 ```
 
-
-
+All true positives
 ```{r}
-ggplot(beta8_results, aes(cov_str, sd, color = dtype)) +
-  geom_line(aes(group = grouping)) +
-  geom_point() +
-  labs(color = "Omics type",
-       x = "Random effect structure", 
-       y = TeX("$SD(\\hat{\\beta_8} | \\hat{\\beta_8} \\neq 0)$")) +
-  expand_limits(x = c(NA, 6)) +
-  geom_dl(aes(label=grouping), method = list("last.points", dl.trans(x=x+.2), cex=0.7))
-
-ggplot(beta8_results, aes(cov_str, 100-recovered, color = dtype)) +
+ggplot(coef_results, aes(cov_str, 100-recovered, color = dtype)) +
   geom_line(aes( group = grouping)) +
   geom_point() +
   labs(color = "Omics type", 
        x = "Random effect structure", 
        y = TeX("# times $\\beta_8$ incorrectly estimated zero$")) + 
   expand_limits(x = c(NA, 6)) +
+  facet_wrap( ~ coef, labeller = label_parsed ) +
   geom_dl(aes(label=grouping), method = list("last.points", dl.trans(x=x+.2), cex=.7))
+```
+
+All standard deviations
+```{r}
+all_sds <- coef_results %>%
+  filter(grouping %in% c("gwas", "gene:correlated", "otu:band")) %>%
+  ggplot(aes(cov_str, sd, color = grouping, group = grouping)) +
+    geom_line() +
+    geom_point() +
+    facet_wrap( ~ coef, labeller=label_parsed) +
+    scale_x_discrete(labels = c("q=1", 
+                                "q=3:\nscal", 
+                                "q=3:\ndiag",
+                                "q=3:\nunstr",
+                                "q=5")) +
+    scale_y_continuous(limits = c(0, NA)) +
+    labs(color = "Omics type",
+        x = "Random effect covariance structure", 
+        y = TeX("$SD(\\hat{\\beta} | \\hat{\\beta} \\neq 0)$")) 
+
+
+all_sds
+
+ggsave(
+  "../plots/all_sds.pdf",
+  all_sds,
+  width = 16,
+  height = 8,
+  units = "cm"
+)
+
 ```
 
 

@@ -53,13 +53,13 @@ y_cent = (y .- mean(y))./std(y) # center and scale response to match the model f
 # control.tol = 1e-2
 # Random.seed!(1234)
 
-# gwas_fit1 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
+# @time gwas_fit1 = hdmm(X, G, y_cent, grp, Z; standardize = true,
 #     penalty="scad", λ=150, ψstr="ident", control=control)
 
-# gwas_fit2 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
+# gwas_fit2 = hdmm(X, G, y_cent, grp, Z; standardize = true,
 #     penalty="scad", λ=190, ψstr="ident", control=control)
 
-# gwas_fit3 = lmmlasso(X, G, y_cent, grp, Z; standardize = true,
+# gwas_fit3 = hdmm(X, G, y_cent, grp, Z; standardize = true,
 #     penalty="scad", λ=200, ψstr="ident", control=control)
 
 # save_object("data/real/GWAS/gwas_fit200.jld2", gwas_fit)
@@ -75,7 +75,7 @@ R"load(\"R/real_gwas_data/fm.rda\")" # this model was fit in the file R/real_gwa
 
 snp_coef1 = gwas_fit1.fixef[11:end]
 idx_snp_nz1 = snp_coef1 .!= 0;
-snp_names[idx_snp_nz1]
+[snp_names[idx_snp_nz1] snp_coef1[idx_snp_nz1]]
 
 snp_coef2 = gwas_fit2.fixef[11:end]
 idx_snp_nz2 = snp_coef2 .!= 0;
