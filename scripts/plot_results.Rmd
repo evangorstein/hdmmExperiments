@@ -1408,7 +1408,7 @@ ggsave(
 Combine 
 
 ```{r}
-gwas_supp_beta3 + gwas_supp_beta8 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
+gwas_supp_beta3 + gwas_supp_beta4 + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
 ggsave("../plots/gwas/gwas_supp_est.pdf", width = 40, height = 10, units = "cm")
 
 ```
@@ -1459,6 +1459,7 @@ If we want to check these, we must divide the elements of $\Psi$ by the variance
 
 As such, we have to read in the GWAS data matrices
 ```{r, cache=TRUE, message=FALSE}
+unzip("../data/GWAS/random3_covdiag.zip", exdir = "../data/GWAS")
 idxs = 1:100
 diag_dfs <- idxs %>% map( 
                 \(i) read_csv(paste0("../data/GWAS/random3_covdiag/data", i, ".csv"))
@@ -1511,6 +1512,7 @@ ggsave(
 ### Unstructured
 
 ```{r, cache=TRUE, message=FALSE}
+unzip("../data/GWAS/random3_covsym.zip", exdir = "../data/GWAS")
 idxs = 1:100
 sym_dfs <- idxs %>% map( 
                 \(i) read_csv(paste0("../data/GWAS/random3_covsym/data", i, ".csv"))
@@ -1527,7 +1529,8 @@ sds <- sds %>%
 
 ```{r}
 
-Lsym <- matrix(c(sqrt(3), 0 ,0, 1, sqrt(3), 0, -sqrt(2), 1, sqrt(2)), nrow = 3, byrow = T)
+Lsym <- matrix(c(sqrt(3), 0 ,0, 1, sqrt(3), 0, -sqrt(2), 1, sqrt(2)), 
+               nrow = 3, byrow = T)
 df_true <- data.frame(parameter = rep(1:9, 2), 
                       y_value = rep(as.vector(Lsym %*% t(Lsym)), 2))
 
@@ -2111,18 +2114,21 @@ All standard deviations
 all_sds <- coef_results %>%
   filter(grouping %in% c("gwas", "gene:correlated", "otu:band")) %>%
   ggplot(aes(cov_str, sd, color = grouping, group = grouping)) +
-    geom_line() +
-    geom_point() +
-    facet_wrap( ~ coef, labeller=label_parsed) +
-    scale_x_discrete(labels = c("q=1", 
-                                "q=3:\nscal", 
-                                "q=3:\ndiag",
-                                "q=3:\nunstr",
-                                "q=5")) +
-    scale_y_continuous(limits = c(0, NA)) +
-    labs(color = "Omics type",
-        x = "Random effect covariance structure", 
-        y = TeX("$SD(\\hat{\\beta} | \\hat{\\beta} \\neq 0)$")) 
+  geom_line() +
+  geom_point() +
+  facet_wrap( ~ coef, labeller=label_parsed) +
+  scale_x_discrete(labels = c("q=1", 
+                              "q=3:\nscalar", 
+                              "q=3:\ndiag",
+                              "q=3:\nunstruct",
+                              "q=5")) +
+  scale_y_continuous(limits = c(0, NA)) +
+  labs(
+    color = "Omics type",
+    x = "Random effect covariance structure", 
+    y = TeX("$SD(\\hat{\\beta} | \\hat{\\beta} \\neq 0)$")) +
+  theme(legend.position = "top")
+    
 
 
 all_sds
