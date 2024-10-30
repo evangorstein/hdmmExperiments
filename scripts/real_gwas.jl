@@ -110,12 +110,13 @@ p = ggplot(snp_df) +
     geom_segment(aes(x = marker, xend = marker, y = 0, yend = abs_coef), color = "gray") +
     geom_point(aes(x = marker, y = abs_coef), color = "blue") +
     geom_text_repel(data = chosen_markers,
-                    aes(x = marker, y = abs_coef, label = names), size = .05) +
+                    aes(x = marker, y = abs_coef, label = names), size = 8) +
     labs(y = "coefficient magnitude") +
     facet_wrap(~lambda, nrow = 1, labeller=label_parsed) +
-    theme(axis.text.x = element_text(size = 6))
+    theme(text = element_text(size = 35),
+          axis.text.x = element_text(size = 20))
 fname = "plots/real/all_snp_effects.eps"
-ggsave(fname,p,width = 16, height = 10, units = "cm")
+ggsave(fname,p,width = 50, height = 30, units = "cm")
 """
 
 
@@ -153,7 +154,7 @@ p <- ggplot(pheno_df) +
     theme(text = element_text(size = 35), legend.position = "bottom") +
     scale_color_brewer(palette = "Dark2")
 
-ggsave("revised_plots/real/gwas_true_v_predicted.pdf", p, width = 30, height = 30, units = "cm")
+ggsave("plots/real/gwas_true_v_predicted.eps", p, width = 30, height = 30, units = "cm")
 """
 
 # What about just genetic effects (excluding other fixed effects)?
