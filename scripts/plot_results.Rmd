@@ -47,7 +47,6 @@ otu_results <- read_csv("../sim_results/OTU/best_results.csv")
 These data frames contain the fits with the best two BIC's (across all lambdas) for each dataset generated under each setting.
 
 
-
 # Gene expression results
 Let's check on the count for each setting
 
@@ -160,74 +159,52 @@ ggsave(
 )
 ```
 
-We can similarly create the plot of true positives for those simulations for which there were 3 random effects:
+Now we look at true positive rates. We can plot the percentage of datasets in which we achieved perfect recovery. First prepare the data.
 
 ```{r}
-# Export the data for this plot to a csv for Rosa to make a table
-
-bgr_nz10 %>%
+gene_main_tp_data <- bgr_nz10 %>%
   filter(q==3) %>%
-  select(penalty, cov_str, predictor_cor, tp) %>%
-  write_csv("../sim_results/true_positive_tables/gene/gene_main_tp.csv")
+  select(penalty, cov_str, predictor_cor, tp) %>% 
+  group_by(penalty, predictor_cor, cov_str) %>%
+  summarize(
+    tp_3_to_6 = sum(tp >= 3 & tp < 6),
+    tp_6_to_9 = sum(tp >= 6 & tp <= 9),
+    tp_10 = sum(tp == 10)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    tp_total = tp_3_to_6 + tp_6_to_9 + tp_10,  # Calculate total tp count
+    tp_3_to_6_percent = round(tp_3_to_6 / tp_total,2),  # Calculate percentage for tp_3_to_6
+    tp_6_to_9_percent =  round(tp_6_to_9 / tp_total,2),  # Calculate percentage for tp_6_to_9
+    tp_10_percent = round(tp_10 / tp_total,2)           # Calculate percentage for tp_10
+  ) 
 
-
+print(gene_main_tp_data)
 ```
 
-
-```{r, warning=FALSE}
-
-counts <- bgr_nz10 %>%
-  group_by(penalty, cov_str, q, predictor_cor) %>%
-  summarise(
-    cnt_perfect = sum(tp == 10), .groups = "drop",
-    ) %>% 
-  filter(q == 3)
-
-gene_main_tp <- bgr_nz10 %>%
-  filter(q==3) %>%
-  filter(tp < 10) %>%
-  bind_rows(
-    data.frame(
-      tp = c(NA, NA), penalty = c("SCAD", "LASSO"), 
-      predictor_cor = c("No", "No"), 
-      cov_str = factor(c("scalar", "unstructured"), levels = c("scalar", "diagonal", "unstructured"))
-    )) %>%
-  ggplot(aes(y = tp, x = cov_str, col = penalty)) +
-  geom_point(
-    pch = 21,
-    position = position_jitterdodge(
-      dodge.width = 0.9,
-      jitter.height = 0,
-      jitter.width = 0.25)
-    ) +
-  geom_text(data = counts, aes(cov_str, 10, label = cnt_perfect),
-            show.legend = FALSE,
-            position = position_dodge(width = 0.9), size = 5) +
-  labs(y = "# true positives (out of 10)", x = TeX("$\\Psi_\\theta$ structure")) +
-  scale_y_continuous(breaks = c(3,6,9,10), expand = expansion(mult = c(.05, .1))) +
-  facet_wrap(~ predictor_cor, nrow = 2, labeller = labeller(predictor_cor = corr.labs)) +
-  theme(
-    legend.position = "top",
-    axis.ticks.x = element_blank(),
-    text = element_text(size = 18), 
-    axis.title.y = element_text(size = rel(.85))
-        ) +
-  scale_color_mine()
-
+Now plot
+```{r}
+x_order <- c("scalar.No", "diagonal.No", "unstructured.No", "scalar.Yes", "diagonal.Yes", "unstructured.Yes")
+gene_main_tp <- gene_main_tp_data %>%
+  mutate(cor_label = ifelse(predictor_cor == "No", 
+                            "no correlation", "yes correlation")) %>%
+  unite("x_combo", cov_str, predictor_cor, sep = ".") %>%
+  mutate(x_combo = factor(x_combo, x_order)) %>%
+  ggplot(aes(x_combo, tp_10_percent, fill=penalty)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_wrap(~cor_label, scales = "free_x") + # Separate by correlation label
+  labs(x = "", y = "True Positive = 10 (%)", fill = "penalty", title = "") +
+  scale_fill_manual(values = c("LASSO" = "orange", "SCAD" = "royalblue")) +
+  theme_minimal() +
+  theme(legend.position = "top", text = element_text(size = 18))
+  
 gene_main_tp
-
-ggsave( 
-  "../plots/gene/gene_main_tp.eps",
-  gene_main_tp,
-  width = 20,
-  height = 15,
-  units = "cm"
-) 
 ```
+
 
 Let's combine these using patchworks:
 ```{r, warning=FALSE}
-gene_main_fp + gene_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
+gene_main_fp + gene_main_tp + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
 ggsave("../plots/gene/gene_main_select.eps", width = 40, height = 15, units = "cm")
 ```
 
@@ -1086,71 +1063,48 @@ ggsave(
 )
 ```
 
-True positives
-
+Now we look at true positive rates. We can plot the percentage of datasets in which we achieved perfect recovery. First prepare the data.
 ```{r}
-# Export the data for this plot to a csv for Rosa to make a table
 
-best_gwas_results %>%
+gwas_main_tp_data <- best_gwas_results %>%
   ungroup() %>%
   filter(q==3) %>%
-  select(penalty, cov_str, tp) %>%
-  write_csv("../sim_results/true_positive_tables/gwas/gwas_main_tp.csv")
+  select(penalty, cov_str, tp) %>% 
+  group_by(penalty, cov_str) %>%
+  summarize(
+    tp_3_to_6 = sum(tp >= 3 & tp < 6),
+    tp_6_to_9 = sum(tp >= 6 & tp <= 9),
+    tp_10 = sum(tp == 10)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    tp_total = tp_3_to_6 + tp_6_to_9 + tp_10,  # Calculate total tp count
+    tp_3_to_6_percent = round(tp_3_to_6 / tp_total,2),  # Calculate percentage for tp_3_to_6
+    tp_6_to_9_percent =  round(tp_6_to_9 / tp_total,2),  # Calculate percentage for tp_6_to_9
+    tp_10_percent = round(tp_10 / tp_total,2)           # Calculate percentage for tp_10
+  ) 
 
-
+print(gwas_main_tp_data)
 ```
 
-
-
+Now plot
 ```{r}
-counts <- best_gwas_results %>%
-  group_by(penalty, cov_str, q) %>%
-  summarise(
-    cnt_perfect = sum(tp == 10), .groups = "drop",
-    ) %>% 
-  filter(q == 3)
-
-
-gwas_main_tp <- best_gwas_results  %>%
-  filter(q==3) %>%
-  group_by(cov_str, q) %>%
-  ungroup() %>%
-  filter(tp < 10) %>%
-  ggplot(aes(y = tp, x = cov_str, col = penalty)) +
-  geom_point(pch = 21, 
-             position = position_jitterdodge(
-               dodge.width = 0.9,
-               jitter.height = .05,
-               jitter.width = 0.3)) +
-  geom_text(data = counts, aes(cov_str, 10, label = cnt_perfect),
-            show.legend = FALSE,
-            position = position_dodge(width = 0.9), size = 5) +
-  labs(y = "# true positives (out of 10)", x = TeX("$\\Psi_\\theta$ structure")) + 
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), 
-                     limits = c(0,10), breaks = c(3,6,9,10)) +
-  theme(legend.position = "top",
-        axis.ticks.x = element_blank(),
-        text = element_text(size = 18)) +
-  scale_color_mine()
-
+gwas_main_tp <-  ggplot(gwas_main_tp_data, 
+                        aes(cov_str, tp_10_percent, fill=penalty)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "", y = "True Positive = 10 (%)", fill = "penalty", title = "") +
+  scale_fill_manual(values = c("LASSO" = "orange", "SCAD" = "royalblue")) +
+  theme_minimal() +
+  theme(legend.position = "top", text = element_text(size = 18))
+  
 gwas_main_tp
-
-ggsave(
-  "../plots/gwas/gwas_main_tp.eps",
-  gwas_main_fp,
-  width = 20,
-  height = 8,
-  units = "cm"
-)
-
-
 ```
 
 Now let's add them together
 
 ```{r}
-gwas_main_fp + gwas_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
-ggsave("../plots/gwas/gwas_main_select.eps", width = 40, height = 10, units = "cm")
+gwas_main_fp + gwas_main_tp + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
+ggsave("../plots/gwas/gwas_main_select.eps", width = 40, height = 20, units = "cm")
 ```
 
 
@@ -1630,13 +1584,13 @@ best_otu_results <- otu_results %>%
 otu_main_fp <- best_otu_results  %>%
   filter(q==3, otu_cor %in% c("band", "scale_free")) %>%
   ggplot(aes(y = fp/117, x = 1, col = otu_cor)) +
-  geom_boxplot(outlier.shape = NA, show.legend = F, width = .3) +
+  geom_boxplot(outlier.shape = NA, width = .3) +
    geom_point(pch = 21, #aes(alpha = plot),
              position = position_jitter(height = 0, width = .1)) +
   facet_grid2(otu_cor ~ cov_str, scales = "free_y",
              labeller = labeller(predictor_cor = corr.labs)) +
-  labs(y = "false positive rate", x = TeX("$\\Psi_\\theta$ structure")) + 
-  theme(legend.position = "none",
+  labs(y = "false positive rate", x = TeX("$\\Psi_\\theta$ structure"), col = "network") + 
+  theme(legend.position = "top",
         axis.text.x=element_blank(),
         axis.ticks.x = element_blank(),
         axis.title.x = element_blank(),
@@ -1654,62 +1608,51 @@ ggsave(
   units = "cm"
 )
 ```
-True positives
 
+Now we look at true positive rates. We can plot the percentage of datasets in which we achieved perfect recovery. First prepare the data.
 ```{r}
-#Export to csv for Rosa to make a table
-best_otu_results %>%
+
+otu_main_tp_data <- best_otu_results %>%
   ungroup() %>%
   filter(q==3) %>%
-  select(q, otu_cor, cov_str, tp) %>%
-  write_csv("../sim_results/true_positive_tables/otu/otu_main_tp.csv")
+  select(otu_cor, cov_str, tp) %>% 
+  group_by(otu_cor, cov_str) %>%
+  summarize(
+    tp_3_to_6 = sum(tp >= 3 & tp < 6),
+    tp_6_to_10 = sum(tp >= 6 & tp <= 10),
+    tp_11 = sum(tp == 11)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    tp_total = tp_3_to_6 + tp_6_to_10 + tp_11,  # Calculate total tp count
+    tp_3_to_6_percent = round(tp_3_to_6 / tp_total,2),  # Calculate percentage for tp_3_to_6
+    tp_6_to_10_percent =  round(tp_6_to_10 / tp_total,2),  # Calculate percentage for tp_6_to_9
+    tp_11_percent = round(tp_11 / tp_total,2)           # Calculate percentage for tp_10
+  ) 
+
+print(otu_main_tp_data)
 ```
 
-
-
+Now plot
 ```{r}
-counts <- best_otu_results %>%
-  group_by(otu_cor, cov_str, q, penalty) %>%
-  summarise(
-    cnt_perfect = sum(tp == 11), .groups = "drop",
-    ) %>% 
-  filter(q == 3, otu_cor %in% c("band", "scale_free"))
-
-otu_main_tp <- best_otu_results  %>%
-  filter(q == 3, otu_cor %in% c("band", "scale_free")) %>%
-  filter(tp < 11) %>%
-  ggplot(aes(y = tp, x = cov_str, col = otu_cor)) +
-  geom_point(pch = 21, #aes(alpha = plot),
-             position = position_jitter(height = 0, width = 0.1)) +
-  geom_text(data = counts, aes(cov_str, 11, label = cnt_perfect),
-            show.legend = FALSE, size = 5) +
-  facet_wrap(~ otu_cor, nrow = 2) +
-  labs(y = "# true positives (out of 11)", x = TeX("$\\Psi_\\theta$ structure")) + 
-  scale_y_continuous(labels = scales::label_number(accuracy = 1), 
-                     limits = c(0,12), breaks = c(4,11)) +
-  theme(legend.position = "none",
-        axis.ticks.x = element_blank(),
-        text = element_text(size = 18)) +
-  scale_color_otu()
-
+otu_main_tp <-  otu_main_tp_data %>%
+  filter(otu_cor %in% c("band", "scale_free")) %>%
+  ggplot(aes(cov_str, tp_11_percent, fill=otu_cor)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "", y = "True Positive = 11 (%)", fill = "network", title = "") +
+  scale_fill_manual(values = c("band" = "seagreen3", "scale_free" = "purple1")) +
+  theme_minimal() +
+  theme(legend.position = "top", text = element_text(size = 18))
+  
 otu_main_tp
-
-ggsave(
-  "../plots/otu/otu_main_tp.eps",
-  otu_main_tp,
-  width = 20,
-  height = 15,
-  units = "cm"
-)
-
 ```
+
 
 Combine false and true positives
 
 ```{r}
-otu_main_fp + otu_main_tp + plot_layout(guides = "collect") + plot_annotation(tag_levels = 'A') 
-ggsave("../plots/otu/otus_main_select.eps", width = 40, height = 10, units = "cm")
-
+otu_main_fp + otu_main_tp + plot_annotation(tag_levels = 'A') & theme(legend.position = 'bottom') 
+ggsave("../plots/otu/otus_main_select.eps", width = 40, height = 20, units = "cm")
 ```
 
 
