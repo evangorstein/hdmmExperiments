@@ -21,7 +21,7 @@ grp = [replace(x, "\"" => "") for x in grp]
 control = Control()
 control.trace = 3
 
-# # Fit random intercept model and save the names of the genes with non-zero effcts in this model
+# # Fit random intercept model and save the names of the genes with non-zero effects in this model
 # # Note that the model results in no variation in intercepts 
 # # (so effectively the same as a LASSO without random effects)
 # X = ones(N, 1)
@@ -88,7 +88,7 @@ lre_mask = ψs .> kappa
 println("Number of genes with high random effect: $(sum(lre_mask))")
 println("Gene names with high random effect: $(gene_names[lre_mask])")
 println("ψs for genes with high random effect: $(ψs[lre_mask])")
-rand_idx = indexin(gene_names[lre_mask], all_gene_names)
+rand_idx = indexin(["YFJD_at", "YTOI_at"], all_gene_names)
 X =  hcat(ones(N), gene_expressions[:, rand_idx])
 Z = gene_expressions[:, rand_idx]
 G = gene_expressions[:, Not(rand_idx)]
