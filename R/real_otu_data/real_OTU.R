@@ -34,12 +34,12 @@ OTU_filtered_n <- sweep(log(OTU_filtered_pc),
 # Form dataframe ----------------------------------------------------------
 meta_data <- data.obj$meta.dat
 country = meta_data$geo_loc_name
-# Square-root transformation of the age
-sqrt_age <- sqrt(meta_data$age)
-df <- data.frame(country, OTU_filtered_n, sqrt_age) |>
+# Log transformation of the age
+log_age <- log(meta_data$age)
+df <- data.frame(country, OTU_filtered_n, log_age) |>
   tibble::rownames_to_column("sample_id")
 # Drop observations with missing age
-df_complete <- tidyr::drop_na(df, sqrt_age)
+df_complete <- tidyr::drop_na(df, log_age)
 dim(df_complete) # dropped 40 observations
 
 # Write processed data and OTU phylo info matrix --------------------------
