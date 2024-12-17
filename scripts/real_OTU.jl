@@ -7,7 +7,7 @@ using Plots
 using RCall
 
 # get data
-# note that response y is square root of age and the design matrix is library size normalized
+# note that response y is square root of age and the design matrix is normalized with centered log-ratio transformation
 data_dir = "data/real/OTU"
 d = CSV.read("$data_dir/normalized_data.csv", DataFrame)
 otu_taxonomies = CSV.read("$data_dir/final_taxonomies.csv", DataFrame)
@@ -18,10 +18,11 @@ countmap(grp)
 otus = Matrix(d[:,3:(end-1)])
 y = d.sqrt_age
 X = ones(N, 1)
+# Instead of using the square root of age, we use the log of the square root of age, which is proportional to the log of age
+log_y = log.(y)
 
 control = Control()
 control.trace = 3
-log_y = log.(y)
 int_fit_orig = hdmm(
 X, otus, log_y, grp;
 penalty="scad", λ=200, ψstr="ident", control=control
@@ -39,7 +40,7 @@ text.(d.sample_id[mask_outly], :red, :left, 11)
 )
 
 
-# fit model with dropped otus and with quadratic for 365th otu
+# fit model with outliers dropped and with quadratic term for 365th otu
 otus = [otus otus[:,365].^2] 
 @time int_fit = hdmm(
 X[.!mask_outly,:], otus[.!mask_outly,:], log_y[.!mask_outly], grp[.!mask_outly]; 
@@ -50,10 +51,8 @@ scatter(int_fit.fitted, log_y[.!mask_outly])
 save_object("data/real/OTU/otu_fit.jld2", int_fit)
 
 
-
 # load otu_fit.jld2
 otu_fit = load_object("data/real/OTU/otu_fit.jld2")
-
 
 
 # get indices of non-zero coefficients besides intercept in the initial estimates

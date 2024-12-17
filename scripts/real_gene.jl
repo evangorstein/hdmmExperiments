@@ -17,65 +17,65 @@ N = length(y)
 # group info
 grp = readlines("$data_dir/riboflavingrouped_structure.csv")
 grp = [replace(x, "\"" => "") for x in grp]
-
-# Fit random intercept model 
-# and save the names of the genes with non-zero effcts in this model
-# Note that the model results in no variation in intercepts 
-# (so effectively the same as a LASSO without random effects)
-X = ones(N, 1)
+# Control 
 control = Control()
 control.trace = 3
-λ = 45
-control.tol = 1e-3
-Random.seed!(1234)
-# we choose to standardize
-int_fit = lmmlasso(X, gene_expressions, y, grp; 
-    penalty="scad", λ=λ, ψstr="ident", control=control)
-beta = int_fit.fixef
-println("Number of non-zero coefs in initial fit: $(int_fit.nz), bic is $(int_fit.bic)")
-idxs = findall(beta[2:end] .!= 0) #skip the intercept
-gene_names = all_gene_names[idxs]
-save_object("data/real/gene_expressions/gene_names.jld2", gene_names)
+
+# # Fit random intercept model and save the names of the genes with non-zero effcts in this model
+# # Note that the model results in no variation in intercepts 
+# # (so effectively the same as a LASSO without random effects)
+# X = ones(N, 1)
+# λ = 45
+# control.tol = 1e-3
+# Random.seed!(1234)
+# # we choose to standardize
+# int_fit = lmmlasso(X, gene_expressions, y, grp; 
+#     penalty="scad", λ=λ, ψstr="ident", control=control)
+# beta = int_fit.fixef
+# println("Number of non-zero coefs in initial fit: $(int_fit.nz), bic is $(int_fit.bic)")
+# idxs = findall(beta[2:end] .!= 0) #skip the intercept
+# gene_names = all_gene_names[idxs]
+# save_object("data/real/gene_expressions/gene_names.jld2", gene_names)
 
 
-# cycle through each non-zero coefficient estimated from the random intercept fit (which resulted in an intercept variance of 0)
-# for each such coefficient, associate a random effect to the corresponding predictor
-# then fit the model with this random effect
-res = Vector{Any}(undef, length(idxs))
-for (i, idx) in enumerate(idxs)
-    println("idx = $idx")
-    # add random effect for the idx-th predictor
-    Z = gene_expressions[:, [idx]]
-    G = gene_expressions[:, Not(idx)]
-    local X = [ones(N) Z]
-    # fit model
-    local control = Control()
-    control.trace = 3
-    control.tol = 1e-3
-    local λ = 45
-    Random.seed!(1234)
-    try 
-        # we choose to standardize
-        est = lmmlasso(X, G, y, grp, Z; penalty="scad", λ=λ, ψstr="ident", control=control)
-        println("Model converged! Hurrah!")
-        println("Initial number of non-zeros is $(est.init_nz)")
-        println("Final number of non-zeros is $(est.nz)")
-        println("Log likelihood is $(est.log_like)")
-        println("BIC is $(est.bic)")
-        println("Estimated L is $(est.L)")
-        println("Estimated σ² is $(est.σ²)")
-        res[i] = Base.structdiff(est, (data=1, weights=1, fitted=1))
-    catch e
-        println("An error occurred in index $(idx): $e")
-        res[i] = "error"
-    end
-end
-save_object("data/real/gene_expressions/gene_results.jld2", res)
+# # cycle through each non-zero coefficient estimated from the random intercept fit (which resulted in an intercept variance of 0)
+# # for each such coefficient, associate a random effect to the corresponding predictor
+# # then fit the model with this random effect
+# res = Vector{Any}(undef, length(idxs))
+# for (i, idx) in enumerate(idxs)
+#     println("idx = $idx")
+#     # add random effect for the idx-th predictor
+#     Z = gene_expressions[:, [idx]]
+#     G = gene_expressions[:, Not(idx)]
+#     local X = [ones(N) Z]
+#     # fit model
+#     local control = Control()
+#     control.trace = 3
+#     control.tol = 1e-3
+#     local λ = 45
+#     Random.seed!(1234)
+#     try 
+#         # we choose to standardize
+#         est = lmmlasso(X, G, y, grp, Z; penalty="scad", λ=λ, ψstr="ident", control=control)
+#         println("Model converged! Hurrah!")
+#         println("Initial number of non-zeros is $(est.init_nz)")
+#         println("Final number of non-zeros is $(est.nz)")
+#         println("Log likelihood is $(est.log_like)")
+#         println("BIC is $(est.bic)")
+#         println("Estimated L is $(est.L)")
+#         println("Estimated σ² is $(est.σ²)")
+#         res[i] = Base.structdiff(est, (data=1, weights=1, fitted=1))
+#     catch e
+#         println("An error occurred in index $(idx): $e")
+#         res[i] = "error"
+#     end
+# end
+# save_object("data/real/gene_expressions/gene_results.jld2", res)
 
 
 ###################################################################
-# Inspect results and fit a final model with random effects 
-# for the genes with the highest random effects from the previous step
+# Fit a final model with random effects assigned to only the genes 
+# with the highest random effects from the previous step
 res = load_object("data/real/gene_expressions/gene_results.jld2")
 gene_names = load_object("data/real/gene_expressions/gene_names.jld2")
 #filter out model that didn't converge
@@ -96,7 +96,6 @@ G = gene_expressions[:, Not(rand_idx)]
 Random.seed!(1234)
 @time final_fit = hdmm(X, G, y, grp, Z; penalty="scad", λ=λ, ψstr="diag", control=control)
 save_object("data/real/gene_expressions/final_fit.jld2", final_fit)
-
 
 # Inspection of final_fit
 final_fit = load("data/real/gene_expressions/final_fit.jld2")["single_stored_object"]

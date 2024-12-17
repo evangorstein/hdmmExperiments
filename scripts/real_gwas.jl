@@ -48,23 +48,23 @@ y_cent = (y .- mean(y))./std(y) # center and scale response to match the model f
 
 # Run the following if you haven't already fit the models
 
-# control = Control()
-# control.trace = 3
-# control.tol = 1e-2
-# Random.seed!(1234)
+control = Control()
+control.trace = 3
+control.tol = 1e-2
+Random.seed!(1234)
 
-# @time gwas_fit1 = hdmm(X, G, y_cent, grp, Z; standardize = true,
-#     penalty="scad", λ=150, ψstr="ident", control=control)
+@time gwas_fit1 = hdmm(X, G, y_cent, grp, Z; standardize = true,
+    penalty="scad", λ=150, ψstr="ident", control=control)
 
-# gwas_fit2 = hdmm(X, G, y_cent, grp, Z; standardize = true,
-#     penalty="scad", λ=190, ψstr="ident", control=control)
+gwas_fit2 = hdmm(X, G, y_cent, grp, Z; standardize = true,
+    penalty="scad", λ=190, ψstr="ident", control=control)
 
-# gwas_fit3 = hdmm(X, G, y_cent, grp, Z; standardize = true,
-#     penalty="scad", λ=200, ψstr="ident", control=control)
+gwas_fit3 = hdmm(X, G, y_cent, grp, Z; standardize = true,
+    penalty="scad", λ=200, ψstr="ident", control=control)
 
-# save_object("data/real/GWAS/gwas_fit200.jld2", gwas_fit)
-# save_object("data/real/GWAS/gwas_fit150.jld2", gwas_fit2)
-# save_object("data/real/GWAS/gwas_fit190.jld2", gwas_fit3)
+save_object("data/real/GWAS/gwas_fit200.jld2", gwas_fit)
+save_object("data/real/GWAS/gwas_fit150.jld2", gwas_fit2)
+save_object("data/real/GWAS/gwas_fit190.jld2", gwas_fit3)
 
 
 ################
@@ -172,8 +172,6 @@ plot(fm$y~gHatHDMM,ylab="Phenotype",
     main="Phenotype versus linear predictor from genomic features in HDMM model",
     xlim=range(gHatHDMM),ylim=range(fm$y))
 """
-
-
 
 
 #Fit and variance statistics
