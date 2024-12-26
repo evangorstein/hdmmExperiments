@@ -26,5 +26,3 @@ dim500_random1_rho0.0_nz5_covid.zip, lasso, ident, 40, 60, 5, 1e-4
 dim500_random1_rho0.0_nz5_covid.zip, scad, ident, 50, 70, 5, 1e-4
 dim500_random1_rho0.6_nz5_covid.zip, lasso, ident, 40, 60, 5, 1e-4
 dim500_random1_rho0.6_nz5_covid.zip, scad, ident, 50, 70, 5, 1e-4
-
-NB: The design matrix was not standardized for these runs
