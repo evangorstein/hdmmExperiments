@@ -1,0 +1,15 @@
+random1_covid.zip, lasso, ident, 10, 100, 1, 1e-4
+random1_covid.zip, scad, ident, 10, 100, 1, 1e-4
+random3_covid.zip, lasso, ident, 10, 100, 1, 1e-4
+random3_covid.zip, scad, ident, 10, 100, 1, 1e-4
+random3_covdiag.zip, lasso, diag, 10, 100, 1, 1e-4
+random3_covdiag.zip, scad, diag, 10, 100, 1, 1e-4
+random3_covsym.zip, lasso, sym, 10, 100, 1, 1e-4
+random3_covsym.zip, scad, sym, 10, 100, 1, 1e-4
+random5_covid.zip, lasso, ident, 10, 100, 1, 1e-4
+random5_covid.zip, scad, ident, 10, 100, 1, 1e-4
+
+NB: We standardized covariates for all GWAS runs
+
+
+

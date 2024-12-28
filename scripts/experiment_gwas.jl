@@ -77,7 +77,7 @@ function process_experiment(zip_path, penalty, cov_structure, lambdas, tol)
     close(reader)
 
     # remove .zip extension
-    setting = split(zip_path, ".")[1]
+    setting = split(Base.basename(zip_path), ".")[1]
     serialize("$(setting)_$(penalty)-newresults.txt", results)
 end
 

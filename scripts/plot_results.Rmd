@@ -41,6 +41,7 @@ names(corr.labs) <- c("Yes", "No")
 ```{r, message=FALSE}
 gene_results <- read_csv("../sim_results/gene/best_results.csv") 
 gwas_results <- read_csv("../sim_results/gwas/best_results.csv")
+new_gwas_results <- read.csv("../sim_results/gwas_new/best_results.csv")
 otu_results <- read_csv("../sim_results/OTU/best_results.csv")
 ```
 
@@ -1115,12 +1116,17 @@ ggsave("../plots/gwas/gwas_main_select.eps", width = 40, height = 20, units = "c
 False positives for case $q=1$ and $q=5$:
 
 ```{r}
+# Display outliers
+best_gwas_results %>%
+  filter(q!=3) %>%
+  mutate(outlier = fp > 100) %>%
+  filter(outlier) 
 
+# Plot non-outliers
 gwas_supp_fp <- best_gwas_results  %>%
   filter(q!=3) %>%
-  group_by(penalty, q) %>%
-  mutate(outlier = fp > quantile(fp, .75) + IQR(fp) * 1.5) %>%
-  ungroup() %>%
+  mutate(outlier = fp > 100) %>%
+  filter(!outlier) %>%
   ggplot(aes(y = fp/990, x = q, col = penalty)) +
   geom_boxplot(position = position_dodge(width = 0.9), show.legend = F,
                width = .3, outlier.shape = 21) +
@@ -1149,7 +1155,6 @@ counts <- best_gwas_results %>%
     cnt_perfect = sum(tp == 10), .groups = "drop",
     ) %>% 
   filter(q != 3)
-
 
 gwas_supp_tp <- best_gwas_results  %>%
   filter(q != 3) %>%
@@ -1378,10 +1383,35 @@ gwas_coefs
 
 ## Variance components
 
+For variance components, we'll use the results from the simulations in which we didn't standardize the random effects covariance matrix, as this messed up the estimates of variance components in the original simulations.
+
+```{r}
+best_new_gwas_results <- new_gwas_results %>%
+  group_by(setting, data_id) %>%
+  arrange(bic, .by_group = TRUE) %>%
+  filter(row_number() == 1) %>%
+  mutate(
+    cor = str_extract(setting, "rho([0-9]+\\.[0-9]+)", group = 1),
+    penalty = setting %>% 
+      str_extract("cov.*_(.*)-", group = 1) %>% toupper %>% factor,
+    q = str_extract(setting, "random([0-9])", group = 1),
+    cov_str = recode_factor(
+      str_extract(setting, "cov(.*)_", group = 1),
+      id = "scalar", diag = "diagonal", sym = "unstructured"
+    ),
+    predictor_cor = if_else(cor == "0.0", "No", "Yes"),
+    fp = n_nz - tp,
+    f = (2*tp)/(tp+fp+10)
+  ) 
+```
+
+
+
+
 ```{r}
 df_true <- data.frame(y_value = 0.56) 
 
-var_gwas_scalar <- best_gwas_results %>%
+var_gwas_scalar <- best_new_gwas_results %>%
   filter(cov_str == "scalar") %>%
   ggplot(aes(y = psi_1, x=q)) +
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21)  +
@@ -1408,31 +1438,13 @@ ggsave(
 ### Diagonal variance components
 
 
-```{r, cache=TRUE, message=FALSE}
-unzip("../data/GWAS/random3_covdiag.zip", exdir = "../data/GWAS")
-idxs = 1:100
-diag_dfs <- idxs %>% map( 
-                \(i) read_csv(paste0("../data/GWAS/random3_covdiag/data", i, ".csv"))
-                )
-
-variances_diag <- diag_dfs %>% 
-  map(\(df) tibble(x2_var = var(df$X2), x3_var = var(df$X3))) %>%
-  list_rbind 
-variances_diag <- variances %>%
-  mutate(data_id = paste0("data", row_number()))
-
-```
-
-
 ```{r}
 df_true <- data.frame(parameter = rep(c(1, 2, 3), 2), 
                       y_value = rep(c(3, 3, 2), 2), correlation = rep(c("No", "Yes"), each = 3))
 
-var_gwas_diag <- best_gwas_results %>%
+var_gwas_diag <- best_new_gwas_results %>%
   filter(cov_str == "diagonal") %>%
-  left_join(variances_diag, by = "data_id") %>%
-  mutate(true_psi1 = psi_1, true_psi5 = psi_5/x2_var, true_psi9 = psi_9/x3_var) %>%
-  pivot_longer(cols = c(true_psi1, true_psi5, true_psi9), 
+  pivot_longer(cols = c(psi_1, psi_5, psi_9), 
                names_to = "parameter", values_to = "estimate") %>%
   ggplot(aes(parameter, estimate)) +
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
@@ -1461,21 +1473,6 @@ ggsave(
 ```
 ### Unstructured
 
-```{r, cache=TRUE, message=FALSE}
-unzip("../data/GWAS/random3_covsym.zip", exdir = "../data/GWAS")
-idxs = 1:100
-sym_dfs <- idxs %>% map( 
-                \(i) read_csv(paste0("../data/GWAS/random3_covsym/data", i, ".csv"))
-                )
-
-sds <- sym_dfs %>% 
-  map(\(df) tibble(x2_sd = sd(df$X2), x3_sd = sd(df$X3))) %>%
-  list_rbind 
-sds <- sds %>%
-  mutate(data_id = paste0("data", row_number()))
-
-```
-
 
 ```{r}
 
@@ -1484,21 +1481,9 @@ Lsym <- matrix(c(sqrt(3), 0 ,0, 1, sqrt(3), 0, -sqrt(2), 1, sqrt(2)),
 df_true <- data.frame(parameter = rep(1:9, 2), 
                       y_value = rep(as.vector(Lsym %*% t(Lsym)), 2))
 
-var_gwas_sym <- best_gwas_results %>%
+var_gwas_sym <- best_new_gwas_results %>%
   filter(cov_str == "unstructured") %>%
-  left_join(sds, by = "data_id") %>%
-  mutate(
-    true_psi1 = psi_1, 
-    true_psi2 = psi_2/x2_sd, 
-    true_psi3 = psi_3/x3_sd,
-    true_psi4 = psi_4/x2_sd,
-    true_psi5 = psi_5/x2_sd^2,
-    true_psi6 = psi_6/(x2_sd*x3_sd),
-    true_psi7 = psi_7/x3_sd,
-    true_psi8 = psi_8/(x2_sd*x3_sd),
-    true_psi9 = psi_9/x3_sd^2
-    ) %>%
-  pivot_longer(cols = paste0("true_psi", 1:9), 
+  pivot_longer(cols = paste0("psi_", 1:9), 
                names_to = "parameter", values_to = "estimate") %>%
   ggplot(aes(parameter, estimate)) +
   geom_boxplot(position = position_dodge(width = 0.9), aes(col = penalty), outlier.shape = 21) +
@@ -1531,6 +1516,7 @@ ggsave(
   units = "cm"
 )
 ```
+
 Combine into final plot
 
 ```{r}
